@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="WhatToEat.Views.PicturePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:WhatToEat.ViewModels"
+    Title="Log Meal"
+    BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                VerticalOptions="FillAndExpand">
+        <VerticalStackLayout Padding="24" Spacing="16"
+                             BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                             VerticalOptions="FillAndExpand">
+
+            <!-- ══ HEADER ════════════════════════════════════════════════ -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Log Your Meal"
+                       FontSize="{DynamicResource FontTitle}" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                       SemanticProperties.HeadingLevel="Level1"/>
+                <Label Text="{Binding StatusText}"
+                       FontSize="{DynamicResource FontSmall}"
+                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                       SemanticProperties.Description="Current status"/>
+            </VerticalStackLayout>
+
+            <!-- ══ ERROR ═════════════════════════════════════════════════ -->
+            <Frame IsVisible="{Binding HasError}"
+                   BackgroundColor="{AppThemeBinding Light=#FFF0F0, Dark=#2A1010}"
+                   BorderColor="#E24B4A"
+                   CornerRadius="12" Padding="14,10" HasShadow="False">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="#E24B4A" FontSize="{DynamicResource FontSmall}"
+                       SemanticProperties.Description="Error message"/>
+            </Frame>
+
+            <!-- ══ PHOTO PREVIEW ══════════════════════════════════════════ -->
+            <!-- Placeholder shown before photo is taken -->
+            <Frame IsVisible="{Binding HasPhoto, Converter={StaticResource InvertedBoolConverter}}"
+                   BackgroundColor="{AppThemeBinding Light=#F0E0CC, Dark=#2C1A0E}"
+                   BorderColor="{AppThemeBinding Light=#EDD9C0, Dark=#4A2C18}"
+                   CornerRadius="20" Padding="0" HasShadow="False"
+                   HeightRequest="260">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="12">
+                    <Label Text="📷"
+                           FontSize="60"
+                           HorizontalOptions="Center"/>
+                    <Label Text="Your food photo will appear here"
+                           FontSize="{DynamicResource FontSmall}"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Actual photo after capture -->
+            <Border IsVisible="{Binding HasPhoto}"
+                    StrokeShape="RoundRectangle 20"
+                    Stroke="{AppThemeBinding Light=#EDD9C0, Dark=#4A2C18}"
+                    StrokeThickness="1"
+                    BackgroundColor="Transparent">
+                <Image Source="{Binding PhotoSource}"
+                       HeightRequest="260"
+                       Aspect="AspectFill"
+                       SemanticProperties.Description="Captured food photo"/>
+            </Border>
+
+            <!-- ══ LOADING ════════════════════════════════════════════════ -->
+            <VerticalStackLayout IsVisible="{Binding IsBusy}"
+                                 Spacing="8" HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   Color="#E07B39" HeightRequest="40"
+                                   SemanticProperties.Description="Identifying food"/>
+                <Label Text="Analysing your photo..."
+                       FontSize="{DynamicResource FontSmall}"
+                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <!-- ══ RESULT CARD ════════════════════════════════════════════ -->
+            <Frame IsVisible="{Binding HasResult}"
+                   BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39"
+                   CornerRadius="16" Padding="20,16" HasShadow="False">
+                <VerticalStackLayout Spacing="12">
+
+                    <Label Text="Identified Food"
+                           FontSize="{DynamicResource FontTiny}" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           SemanticProperties.HeadingLevel="Level2"/>
+
+                    <Label Text="{Binding FoodName}"
+                           FontSize="{DynamicResource FontTitle}" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                           SemanticProperties.Description="Identified food name"/>
+
+                    <BoxView HeightRequest="1"
+                             Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"/>
+
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Frame Grid.Column="0"
+                               BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#3A2010}"
+                               BorderColor="#E07B39" CornerRadius="10"
+                               Padding="14,8" HasShadow="False">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label FontSize="{DynamicResource FontMedium}"/>
+                                <Label Text="{Binding CaloriesLabel}"
+                                       FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
+                                       SemanticProperties.Description="Calories"/>
+                            </HorizontalStackLayout>
+                        </Frame>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ══ FLASH TOGGLE BUTTON — Hardware feature: Flashlight ════ -->
+            <!--
+                Visible only when not busy and flash is supported.
+                Lets the user illuminate dark food scenes before taking a photo.
+                IsFlashOn drives the border colour so the button looks "active"
+                when the torch is on.
+            -->
+            <Button IsVisible="{Binding IsNotBusy}"
+                    Text="{Binding FlashLabel}"
+                    FontSize="{DynamicResource FontBody}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                    BorderWidth="1.5"
+                    CornerRadius="14" HeightRequest="48"
+                    Command="{Binding ToggleFlashCommand}"
+                    SemanticProperties.Hint="Toggle flashlight on or off for better photo lighting">
+                <Button.Triggers>
+                    <!-- Active state: filled orange border when flash is on -->
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsFlashOn}"
+                                 Value="True">
+                        <Setter Property="BorderColor" Value="#E07B39"/>
+                        <Setter Property="BackgroundColor" Value="#FDECD7"/>
+                        <Setter Property="TextColor" Value="#C4773B"/>
+                    </DataTrigger>
+                    <!-- Inactive state: subtle border when flash is off -->
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsFlashOn}"
+                                 Value="False">
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light=#EDD9C0, Dark=#4A2C18}"/>
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <!-- ══ TAKE PHOTO BUTTON ══════════════════════════════════════ -->
+            <Button IsVisible="{Binding IsNotBusy}"
+                    Text="Take Photo"
+                    FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                    BackgroundColor="#E07B39" TextColor="White"
+                    CornerRadius="16" HeightRequest="54"
+                    Command="{Binding TakePhotoCommand}"
+                    SemanticProperties.Hint="Open camera to take a food photo"/>
+
+            <!-- ══ RETAKE + LOG BUTTONS (after result) ═══════════════════ -->
+            <Grid IsVisible="{Binding HasResult}"
+                  ColumnDefinitions="*,*" ColumnSpacing="12">
+
+                <Button Grid.Column="0"
+                        Text="Retake"
+                        FontSize="{DynamicResource FontBody}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                        BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                        BorderWidth="1.5"
+                        CornerRadius="14" HeightRequest="48"
+                        Command="{Binding RetakeCommand}"
+                        SemanticProperties.Hint="Retake the photo"/>
+
+                <Button Grid.Column="1"
+                        Text="Log Meal"
+                        FontSize="{DynamicResource FontBody}" FontAttributes="Bold"
+                        BackgroundColor="#E07B39" TextColor="White"
+                        CornerRadius="14" HeightRequest="48"
+                        Command="{Binding LogMealCommand}"
+                        SemanticProperties.Hint="Save this meal to history"/>
+            </Grid>
+
+            <BoxView HeightRequest="20"
+                     Color="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

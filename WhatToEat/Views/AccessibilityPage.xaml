@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="WhatToEat.Views.AccessibilityPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:WhatToEat.ViewModels"
+    Title="Accessibility"
+    BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="20"
+                             BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+            <!-- ══ HEADER ════════════════════════════════════════════════ -->
+            <Label Text="Accessibility"
+                   FontSize="{Binding FontDisplay}"
+                   FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                   SemanticProperties.HeadingLevel="Level1"
+                   SemanticProperties.Description="Accessibility settings page"/>
+
+            <Label Text="Customise the app to suit your needs"
+                   FontSize="{Binding FontSmall}"
+                   TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"/>
+
+            <!-- ══ FONT SIZE ══════════════════════════════════════════════ -->
+            <Frame BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39" CornerRadius="16"
+                   Padding="20,16" HasShadow="False">
+                <VerticalStackLayout Spacing="12">
+
+                    <Label Text="TEXT SIZE"
+                           FontSize="{Binding FontTiny}"
+                           FontAttributes="Bold"
+                           CharacterSpacing="1.5"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           SemanticProperties.HeadingLevel="Level2"/>
+
+                    <!-- Current scale label -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="Font Size"
+                               FontSize="{Binding FontBody}"
+                               TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                               VerticalOptions="Center"/>
+                        <Label Grid.Column="1"
+                               Text="{Binding FontScaleLabel}"
+                               FontSize="{Binding FontBody}"
+                               FontAttributes="Bold"
+                               TextColor="#E07B39"
+                               VerticalOptions="Center"
+                               SemanticProperties.Description="Current font size setting"/>
+                    </Grid>
+
+                    <!-- Slider: 0.85 → 1.5 in four meaningful steps -->
+                    <Slider Minimum="0.85" Maximum="1.5"
+                            Value="{Binding FontScale}"
+                            MinimumTrackColor="#E07B39"
+                            MaximumTrackColor="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                            ThumbColor="#E07B39"
+                            SemanticProperties.Hint="Adjust text size. Slide right to increase."
+                            SemanticProperties.Description="Text size slider"/>
+
+                    <!-- Step buttons for users who find sliders hard -->
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="S"
+                                FontSize="{Binding FontSmall}"
+                                HeightRequest="{Binding TouchTargetHeight}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                                BorderWidth="1.5" CornerRadius="10"
+                                SemanticProperties.Hint="Set text size to Small"
+                                Clicked="OnFontSmallClicked"/>
+                        <Button Grid.Column="1" Text="N"
+                                FontSize="{Binding FontSmall}"
+                                HeightRequest="{Binding TouchTargetHeight}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                                BorderWidth="1.5" CornerRadius="10"
+                                SemanticProperties.Hint="Set text size to Normal"
+                                Clicked="OnFontNormalClicked"/>
+                        <Button Grid.Column="2" Text="L"
+                                FontSize="{Binding FontSmall}"
+                                HeightRequest="{Binding TouchTargetHeight}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                                BorderWidth="1.5" CornerRadius="10"
+                                SemanticProperties.Hint="Set text size to Large"
+                                Clicked="OnFontLargeClicked"/>
+                        <Button Grid.Column="3" Text="XL"
+                                FontSize="{Binding FontSmall}"
+                                HeightRequest="{Binding TouchTargetHeight}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                                BorderWidth="1.5" CornerRadius="10"
+                                SemanticProperties.Hint="Set text size to Extra Large"
+                                Clicked="OnFontXLargeClicked"/>
+                    </Grid>
+
+                    <!-- Live preview -->
+                    <Frame BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#3A2010}"
+                           BorderColor="#E07B39" CornerRadius="10"
+                           Padding="14,10" HasShadow="False">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Preview"
+                                   FontSize="{Binding FontTiny}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"/>
+                            <Label Text="Grilled Salmon — 350 kcal"
+                                   FontSize="{Binding FontMedium}"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                   SemanticProperties.Description="Font size preview text"/>
+                            <Label Text="Logged at 12:30 PM"
+                                   FontSize="{Binding FontSmall}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ══ HIGH CONTRAST ══════════════════════════════════════════ -->
+            <Frame BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39" CornerRadius="16"
+                   Padding="20,16" HasShadow="False">
+                <VerticalStackLayout Spacing="12">
+
+                    <Label Text="CONTRAST"
+                           FontSize="{Binding FontTiny}"
+                           FontAttributes="Bold"
+                           CharacterSpacing="1.5"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           SemanticProperties.HeadingLevel="Level2"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="High Contrast Mode"
+                                   FontSize="{Binding FontBody}"
+                                   TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"/>
+                            <Label Text="Increases colour contrast for better readability (WCAG AAA)"
+                                   FontSize="{Binding FontTiny}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                                   LineBreakMode="WordWrap"/>
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding HighContrast}"
+                                OnColor="#E07B39"
+                                ThumbColor="White"
+                                VerticalOptions="Center"
+                                SemanticProperties.Hint="Toggle high contrast mode"
+                                SemanticProperties.Description="High contrast switch"/>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ══ DARK MODE INFO ══════════════════════════════════════════ -->
+            <Frame BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39" CornerRadius="16"
+                   Padding="20,16" HasShadow="False">
+                <VerticalStackLayout Spacing="8">
+
+                    <Label Text="DISPLAY"
+                           FontSize="{Binding FontTiny}"
+                           FontAttributes="Bold"
+                           CharacterSpacing="1.5"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           SemanticProperties.HeadingLevel="Level2"/>
+
+                    <Label Text="🌙  Dark Mode"
+                           FontSize="{Binding FontBody}"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"/>
+
+                    <Label Text="Dark mode follows your device system setting. Go to your phone's Display settings to switch between light and dark themes."
+                           FontSize="{Binding FontSmall}"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           LineBreakMode="WordWrap"/>
+
+                    <Button Text="Open Display Settings"
+                            FontSize="{Binding FontSmall}"
+                            HeightRequest="{Binding TouchTargetHeight}"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                            BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                            BorderWidth="1.5" CornerRadius="12"
+                            HorizontalOptions="Start"
+                            SemanticProperties.Hint="Open system display settings"
+                            Clicked="OnOpenDisplaySettingsClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ══ SCREEN READER INFO ═════════════════════════════════════ -->
+            <Frame BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39" CornerRadius="16"
+                   Padding="20,16" HasShadow="False">
+                <VerticalStackLayout Spacing="8">
+
+                    <Label Text="SCREEN READER"
+                           FontSize="{Binding FontTiny}"
+                           FontAttributes="Bold"
+                           CharacterSpacing="1.5"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           SemanticProperties.HeadingLevel="Level2"/>
+
+                    <Label Text="🔊  TalkBack / VoiceOver"
+                           FontSize="{Binding FontBody}"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"/>
+
+                    <Label Text="This app is fully labelled for screen readers. Enable TalkBack (Android) or VoiceOver (iOS) in your device Accessibility settings to hear descriptions of every button and image."
+                           FontSize="{Binding FontSmall}"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           LineBreakMode="WordWrap"/>
+
+                    <Button Text="Open Accessibility Settings"
+                            FontSize="{Binding FontSmall}"
+                            HeightRequest="{Binding TouchTargetHeight}"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                            BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                            BorderWidth="1.5" CornerRadius="12"
+                            HorizontalOptions="Start"
+                            SemanticProperties.Hint="Open system accessibility settings"
+                            Clicked="OnOpenAccessibilitySettingsClicked"/>
+                </VerticalStackLayout>
+            </Frame>
+            <BoxView HeightRequest="32"
+                     Color="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

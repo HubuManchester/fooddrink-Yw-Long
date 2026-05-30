@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="WhatToEat.Views.HistoryPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:WhatToEat.ViewModels"
+    xmlns:models="clr-namespace:WhatToEat.Models"
+    Title="History"
+    BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+    <!-- Main scroll container for entire page content -->
+    <ScrollView BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                VerticalOptions="FillAndExpand">
+        <VerticalStackLayout Spacing="0"
+                             BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                             VerticalOptions="FillAndExpand">
+
+            <!-- Page Header Section -->
+            <VerticalStackLayout Padding="24,20,24,4" Spacing="2">
+                <Label Text="Meal History"
+                       FontSize="{DynamicResource FontDisplay}" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                       SemanticProperties.HeadingLevel="Level1"/>
+                <Label Text="Track all your recorded meals and daily nutrition data"
+                       FontSize="{DynamicResource FontSmall}"
+                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"/>
+            </VerticalStackLayout>
+
+            <!-- Error message frame -->
+            <Frame IsVisible="{Binding HasError}"
+                   BackgroundColor="{AppThemeBinding Light=#FFF0F0, Dark=#2A1010}"
+                   BorderColor="#E24B4A"
+                   CornerRadius="12" Padding="14,10" HasShadow="False"
+                   Margin="24,8,24,0">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="#E24B4A" FontSize="{DynamicResource FontSmall}"/>
+            </Frame>
+
+            <!-- Loading indicator -->
+            <ActivityIndicator
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="#E07B39" HeightRequest="40"
+                Margin="0,16,0,0"/>
+
+            <!-- Global Statistics Card (tap to expand / collapse details) -->
+            <Frame IsVisible="{Binding HasEntries}"
+                   BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                   BorderColor="#E07B39"
+                   CornerRadius="20" Padding="20,16" HasShadow="False"
+                   Margin="24,12,24,0">
+                <!-- Tap anywhere on the card to toggle the detail list below -->
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ToggleStatsCommand}"/>
+                </Frame.GestureRecognizers>
+
+                <VerticalStackLayout Spacing="12">
+                    <!-- Header row: title + expand/collapse arrow -->
+                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <Label Grid.Column="0"
+                               Text="OVERALL STATISTICS"
+                               FontSize="{DynamicResource FontTiny}" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                               CharacterSpacing="1.5"
+                               VerticalOptions="Center"/>
+                        <Label Grid.Column="1"
+                               Text="{Binding StatsExpandIcon}"
+                               FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#E07B39, Dark=#F4A460}"
+                               VerticalOptions="Center"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <!-- Today's Calories -->
+                        <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="2">
+                            <Label Text="Calories Today" FontSize="{DynamicResource FontSmall}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding TodayCaloriesLabel}"
+                                   FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#E07B39, Dark=#F4A460}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <BoxView Grid.Column="0" Grid.ColumnSpan="1" WidthRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 HorizontalOptions="End" VerticalOptions="Fill"/>
+
+                        <!-- Total Recorded Meals -->
+                        <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
+                            <Label Text="Total Meals" FontSize="{DynamicResource FontSmall}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding TotalMealsLabel}"
+                                   FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#E07B39, Dark=#F4A460}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <BoxView Grid.Column="1" Grid.ColumnSpan="1" WidthRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 HorizontalOptions="End" VerticalOptions="Fill"/>
+
+                        <!-- Overall Total Calories -->
+                        <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
+                            <Label Text="Total Calories" FontSize="{DynamicResource FontSmall}"
+                                   TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding TotalCaloriesLabel}"
+                                   FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#E07B39, Dark=#F4A460}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <!-- Tap hint -->
+                    <Label Text="{Binding StatsExpandHint}"
+                           FontSize="{DynamicResource FontTiny}"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Action Buttons: Read Summary / Clear All -->
+            <Grid IsVisible="{Binding HasEntries}"
+                  Padding="24,12,24,4"
+                  ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Grid.Column="0"
+                        Text="Read Summary"
+                        FontSize="{DynamicResource FontSmall}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                        BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                        BorderWidth="1.5"
+                        CornerRadius="14" HeightRequest="44"
+                        Command="{Binding ReadSummaryCommand}"/>
+                <Button Grid.Column="1"
+                        Text="Clear All"
+                        FontSize="{DynamicResource FontSmall}"
+                        BackgroundColor="Transparent"
+                        TextColor="#E24B4A"
+                        BorderColor="#E24B4A"
+                        BorderWidth="1.5"
+                        CornerRadius="14" HeightRequest="44"
+                        Command="{Binding ClearAllCommand}"/>
+            </Grid>
+
+            <!-- Section Divider for Daily Log List (only when expanded) -->
+            <Grid IsVisible="{Binding IsDetailsVisible}"
+                  Padding="24,12,24,4"
+                  ColumnDefinitions="*,Auto,*" ColumnSpacing="10">
+                <BoxView Grid.Column="0" HeightRequest="1"
+                         Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                         VerticalOptions="Center"/>
+                <Label Grid.Column="1" Text="Daily Meal Details"
+                       FontSize="{DynamicResource FontTiny}" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                       VerticalOptions="Center"/>
+                <BoxView Grid.Column="2" HeightRequest="1"
+                         Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                         VerticalOptions="Center"/>
+            </Grid>
+
+            <!-- Grouped Meal List via BindableLayout (only when expanded) -->
+            <VerticalStackLayout IsVisible="{Binding IsDetailsVisible}"
+                                 BindableLayout.ItemsSource="{Binding GroupedEntries}"
+                                 Spacing="0"
+                                 Margin="24,0,24,0">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="models:MealDayGroup">
+                        <VerticalStackLayout Spacing="0">
+
+                            <!-- Group Header: Date + Meal Count + Daily Total Calories -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,16,0,6" ColumnSpacing="12">
+                                <Label Grid.Column="0"
+                                       Text="{Binding DateLabel}"
+                                       FontSize="{DynamicResource FontBody}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                       VerticalOptions="Center"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding MealCountLabel}"
+                                       FontSize="{DynamicResource FontSmall}"
+                                       TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                                       VerticalOptions="Center"/>
+                                <Frame Grid.Column="2"
+                                       BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#2C1A0E}"
+                                       BorderColor="#E07B39" CornerRadius="10"
+                                       Padding="10,4" HasShadow="False"
+                                       VerticalOptions="Center">
+                                    <Label Text="{Binding TotalCaloriesLabel}"
+                                           FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"/>
+                                </Frame>
+                            </Grid>
+
+                            <!-- Meals of this day -->
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding .}" Spacing="0">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="models:MealLogEntry">
+                                        <Frame
+                                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                                            BorderColor="{AppThemeBinding Light=#EDD9C0, Dark=#4A2C18}"
+                                            CornerRadius="16" Padding="0" HasShadow="False"
+                                            Margin="0,0,0,10">
+                                            <Grid ColumnDefinitions="90,*,Auto" ColumnSpacing="0">
+                                                <!-- Food Image -->
+                                                <Border Grid.Column="0"
+                                                        StrokeShape="RoundRectangle 16,0,0,16"
+                                                        Stroke="Transparent" StrokeThickness="0"
+                                                        BackgroundColor="Transparent">
+                                                    <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageSourceConverter}}"
+                                                           HeightRequest="80" WidthRequest="90"
+                                                           Aspect="AspectFill"/>
+                                                </Border>
+
+                                                <!-- Name | Time | Calories -->
+                                                <VerticalStackLayout Grid.Column="1"
+                                                                    Padding="12,12,8,12" Spacing="6"
+                                                                    VerticalOptions="Center">
+                                                    <Label Text="{Binding FoodName}"
+                                                           FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                                           LineBreakMode="TailTruncation" MaxLines="1"/>
+                                                    <Label Text="{Binding LoggedAt, StringFormat='Recorded at {0:h:mm tt}'}"
+                                                           FontSize="{DynamicResource FontSmall}"
+                                                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"/>
+                                                    <Frame BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#3A2010}"
+                                                           BorderColor="#E07B39" CornerRadius="8"
+                                                           Padding="8,4" HasShadow="False"
+                                                           HorizontalOptions="Start">
+                                                        <Label Text="{Binding Calories, StringFormat='{0} Kilocalories'}"
+                                                               FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                                                               TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"/>
+                                                    </Frame>
+                                                </VerticalStackLayout>
+
+                                                <!-- Delete Button -->
+                                                <Button Grid.Column="2"
+                                                        Text="×" FontSize="{DynamicResource FontMedium}"
+                                                        BackgroundColor="Transparent"
+                                                        TextColor="{AppThemeBinding Light=#C4A882, Dark=#5A4030}"
+                                                        WidthRequest="44" HeightRequest="44"
+                                                        VerticalOptions="Center"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
+                                                        CommandParameter="{Binding .}"/>
+                                            </Grid>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <!-- Empty State -->
+            <VerticalStackLayout IsVisible="{Binding IsEmpty}"
+                                 VerticalOptions="Center"
+                                 HorizontalOptions="Center"
+                                 Spacing="16"
+                                 Padding="24,60,24,24">
+                <Label Text="No meals logged yet"
+                       FontSize="{DynamicResource FontLarge}" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                       HorizontalOptions="Center"/>
+                <Label Text="Go to the Picture tab and take a photo to start recording your meals."
+                       FontSize="{DynamicResource FontBody}"
+                       TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       LineBreakMode="WordWrap"/>
+                <Frame BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#2C1A0E}"
+                       BorderColor="#E07B39" CornerRadius="14"
+                       Padding="20,12" HasShadow="False"
+                       HorizontalOptions="Center">
+                    <Label Text="Navigate to Picture tab to log meals"
+                           FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
+                           VerticalOptions="Center"/>
+                </Frame>
+            </VerticalStackLayout>
+
+            <!-- Bottom spacing -->
+            <BoxView HeightRequest="32"
+                     Color="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

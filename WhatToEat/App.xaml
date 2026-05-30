@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:WhatToEat"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:converters="clr-namespace:WhatToEat.Converters"
+             x:Class="WhatToEat.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ── Converters ─────────────────────────────────────── -->
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
+            <converters:PathToImageSourceConverter x:Key="PathToImageSourceConverter"/>
+
+            <!-- ══════════════════════════════════════════════════════
+                 GLOBAL FONT SIZE RESOURCES
+                 These are updated at runtime by AccessibilityViewModel
+                 whenever the user moves the font-size slider.
+                 All Label/Button FontSize bindings reference these keys
+                 via DynamicResource so they update instantly app-wide.
+
+                 Scale tiers (FontScale multiplier):
+                   Small   0.85 | Normal 1.0 | Large 1.25 | XLarge 1.5
+                 ══════════════════════════════════════════════════════ -->
+            <x:Double x:Key="FontTiny">10</x:Double>
+            <!-- captions, WCAG labels   -->
+            <x:Double x:Key="FontSmall">12</x:Double>
+            <!-- subtitles, hints        -->
+            <x:Double x:Key="FontBody">14</x:Double>
+            <!-- body text               -->
+            <x:Double x:Key="FontMedium">16</x:Double>
+            <!-- card titles             -->
+            <x:Double x:Key="FontLarge">20</x:Double>
+            <!-- section headings        -->
+            <x:Double x:Key="FontTitle">24</x:Double>
+            <!-- page sub-titles         -->
+            <x:Double x:Key="FontDisplay">28</x:Double>
+            <!-- hero / page headings    -->
+
+            <!-- Touch-target height — grows with font scale (WCAG 2.5.5) -->
+            <x:Double x:Key="TouchTargetHeight">44</x:Double>
+
+            <!-- ══════════════════════════════════════════════════════
+                 GLOBAL LABEL STYLES
+                 Applied implicitly to every Label in the app.
+                 FontSize uses DynamicResource so the slider updates
+                 all labels live without restarting.
+                 ══════════════════════════════════════════════════════ -->
+            <Style TargetType="Label" ApplyToDerivedTypes="True">
+                <Setter Property="FontSize"
+                        Value="{DynamicResource FontBody}"/>
+                <Setter Property="LineBreakMode"
+                        Value="WordWrap"/>
+            </Style>
+
+            <!-- ══════════════════════════════════════════════════════
+                 GLOBAL BUTTON STYLE
+                 Minimum touch target 44pt, grows with font scale.
+                 ══════════════════════════════════════════════════════ -->
+            <Style TargetType="Button" ApplyToDerivedTypes="True">
+                <Setter Property="FontSize"
+                        Value="{DynamicResource FontBody}"/>
+                <Setter Property="MinimumHeightRequest"
+                        Value="{DynamicResource TouchTargetHeight}"/>
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="WhatToEat.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:WhatToEat.Views"
+    Shell.FlyoutBehavior="Disabled"
+    Title="WhatToEat">
+
+    <TabBar>
+        <ShellContent
+            Title="Home"
+            Route="Home"
+            Icon="home.png"
+            ContentTemplate="{DataTemplate views:HomePage}"
+            SemanticProperties.Description="Home page, spin the wheel for food ideas"/>
+
+        <ShellContent
+            Title="Discover"
+            Route="Discover"
+            Icon="discover.png"
+            ContentTemplate="{DataTemplate views:DiscoverPage}"
+            SemanticProperties.Description="Discover and search recipes"/>
+
+        <ShellContent
+            Title="Picture"
+            Route="Picture"
+            Icon="picture.png"
+            ContentTemplate="{DataTemplate views:PicturePage}"
+            SemanticProperties.Description="Take a photo to log your meal"/>
+
+        <ShellContent
+            Title="History"
+            Route="History"
+            Icon="history.png"
+            ContentTemplate="{DataTemplate views:HistoryPage}"
+            SemanticProperties.Description="View your meal history"/>
+
+        <ShellContent
+            Title="Access"
+            Route="Accessibility"
+            Icon="access.png"
+            ContentTemplate="{DataTemplate views:AccessibilityPage}"
+            SemanticProperties.Description="Accessibility settings, font size and contrast"/>
+    </TabBar>
+
+</Shell>

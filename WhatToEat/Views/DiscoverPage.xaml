@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="WhatToEat.Views.DiscoverPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:WhatToEat.ViewModels"
+    xmlns:models="clr-namespace:WhatToEat.Models"
+    Title="Recipe Detail"
+    BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+    <ScrollView BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+        <VerticalStackLayout Spacing="0"
+                             BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+
+            <!-- ══ LOADING ═══════════════════════════════════════════════ -->
+            <ActivityIndicator
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="#E07B39"
+                HeightRequest="60"
+                Margin="0,40,0,0"
+                SemanticProperties.Description="Loading recipe details"/>
+
+            <!-- ══ ERROR STATE ════════════════════════════════════════════ -->
+            <VerticalStackLayout IsVisible="{Binding HasError}"
+                                 Padding="24,24,24,8" Spacing="12">
+                <Frame BackgroundColor="{AppThemeBinding Light=#FFF0F0, Dark=#2A1010}"
+                       BorderColor="#E24B4A"
+                       CornerRadius="12" Padding="16,12"
+                       HasShadow="False">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="#E24B4A" FontSize="{DynamicResource FontSmall}"
+                           SemanticProperties.Description="Error message"/>
+                </Frame>
+                <Button Text="Try Again"
+                        Command="{Binding RetryCommand}"
+                        BackgroundColor="#E07B39" TextColor="White"
+                        CornerRadius="12" HeightRequest="44"
+                        SemanticProperties.Hint="Retry loading the recipe"/>
+            </VerticalStackLayout>
+
+            <!-- ══ RECIPE CONTENT ═════════════════════════════════════════ -->
+            <VerticalStackLayout IsVisible="{Binding HasRecipe}" Spacing="0">
+
+                <!-- Hero image -->
+                <Border StrokeShape="RoundRectangle 0,0,24,24"
+                        Stroke="Transparent" StrokeThickness="0"
+                        Margin="16,16,16,0">
+                    <Image Source="{Binding Recipe.Image}"
+                           HeightRequest="220"
+                           Aspect="AspectFill"
+                           SemanticProperties.Description="Recipe photo"/>
+                </Border>
+
+                <!-- Title + stats -->
+                <VerticalStackLayout Padding="24,16,24,4" Spacing="6">
+                    <Label Text="{Binding Recipe.Title}"
+                           FontSize="{DynamicResource FontTitle}" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                           LineBreakMode="WordWrap"
+                           SemanticProperties.HeadingLevel="Level1"/>
+
+                    <Grid ColumnDefinitions="Auto,Auto,*"
+                          ColumnSpacing="16" Margin="0,4,0,0">
+                        <Frame Grid.Column="0"
+                               BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#2C1A0E}"
+                               BorderColor="#E07B39" CornerRadius="10"
+                               Padding="12,6" HasShadow="False">
+                            <HorizontalStackLayout Spacing="6">
+                                <Label FontSize="{DynamicResource FontBody}"/>
+                                <Label Text="{Binding TimeLabel}"
+                                       FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
+                                       SemanticProperties.Description="Preparation time"/>
+                            </HorizontalStackLayout>
+                        </Frame>
+                        <Frame Grid.Column="1"
+                               BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#2C1A0E}"
+                               BorderColor="#E07B39" CornerRadius="10"
+                               Padding="12,6" HasShadow="False">
+                            <HorizontalStackLayout Spacing="6">
+                                <Label FontSize="{DynamicResource FontBody}"/>
+                                <Label Text="{Binding ServingsLabel}"
+                                       FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
+                                       SemanticProperties.Description="Number of servings"/>
+                            </HorizontalStackLayout>
+                        </Frame>
+                    </Grid>
+                </VerticalStackLayout>
+
+                <!-- ── Voice search bar ───────────────────────────────── -->
+                <Frame Margin="24,8,24,0"
+                       BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
+                       BorderColor="{AppThemeBinding Light=#EDD9C0, Dark=#4A2C18}"
+                       CornerRadius="16" Padding="12,10" HasShadow="False">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+
+                        <!-- Label swaps based on IsListening / IsNotListening -->
+                        <Label Grid.Column="0"
+                               Text="🎤 Tap to search by voice..."
+                               IsVisible="{Binding IsNotListening}"
+                               FontSize="{DynamicResource FontSmall}"
+                               TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                               VerticalOptions="Center"
+                               SemanticProperties.Description="Voice search idle"/>
+                        <Label Grid.Column="0"
+                               Text="🎤 Listening..."
+                               IsVisible="{Binding IsListening}"
+                               FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                               TextColor="#E07B39"
+                               VerticalOptions="Center"
+                               SemanticProperties.Description="Listening for voice input"/>
+
+                        <Button Grid.Column="1"
+                                Text="▷"
+                                FontSize="{DynamicResource FontLarge}"
+                                BackgroundColor="Transparent"
+                                TextColor="#E07B39"
+                                Command="{Binding VoiceSearchCommand}"
+                                HeightRequest="44" WidthRequest="48"
+                                CornerRadius="12"
+                                SemanticProperties.Hint="Search by voice"/>
+                    </Grid>
+                </Frame>
+
+                <!-- ── INGREDIENTS ────────────────────────────────────── -->
+                <VerticalStackLayout Padding="24,20,24,4" Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10">
+                        <BoxView Grid.Column="0" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="Ingredients"
+                               FontSize="{DynamicResource FontTiny}" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                               VerticalOptions="Center"
+                               SemanticProperties.HeadingLevel="Level2"/>
+                        <BoxView Grid.Column="2" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="6"
+                                        BindableLayout.ItemsSource="{Binding Recipe.ExtendedIngredients}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:SpoonIngredient">
+                                <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+                                    <Label Grid.Column="0" Text="•"
+                                           FontSize="{DynamicResource FontMedium}" FontAttributes="Bold"
+                                           TextColor="#E07B39"
+                                           VerticalOptions="Start"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Original}"
+                                           FontSize="{DynamicResource FontBody}"
+                                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                           LineBreakMode="WordWrap"
+                                           SemanticProperties.Description="{Binding Original}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- ── INSTRUCTIONS ───────────────────────────────────── -->
+                <VerticalStackLayout Padding="24,16,24,4" Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10">
+                        <BoxView Grid.Column="0" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="Instructions"
+                               FontSize="{DynamicResource FontTiny}" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                               VerticalOptions="Center"
+                               SemanticProperties.HeadingLevel="Level2"/>
+                        <BoxView Grid.Column="2" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="12"
+                                        BindableLayout.ItemsSource="{Binding Recipe.Steps}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:SpoonStep">
+                                <Grid ColumnDefinitions="36,*" ColumnSpacing="12">
+                                    <Grid Grid.Column="0" VerticalOptions="Start">
+                                        <Ellipse WidthRequest="28" HeightRequest="28"
+                                                 Fill="#E07B39"/>
+                                        <Label Text="{Binding Number}"
+                                               FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                                               TextColor="White"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Step}"
+                                           FontSize="{DynamicResource FontBody}"
+                                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                           LineBreakMode="WordWrap"
+                                           VerticalOptions="Center"
+                                           SemanticProperties.Description="{Binding Step}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- ── Action buttons ─────────────────────────────────── -->
+                <Grid Padding="24,16,24,32"
+                      ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Grid.Column="0"
+                            Text="Read Aloud"
+                            FontSize="{DynamicResource FontSmall}"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                            BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                            BorderWidth="1.5"
+                            CornerRadius="14" HeightRequest="48"
+                            Command="{Binding ReadAloudCommand}"
+                            SemanticProperties.Hint="Read recipe aloud"/>
+                    <Button Grid.Column="1"
+                            Text="Log Meal"
+                            FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
+                            BackgroundColor="#E07B39"
+                            TextColor="White"
+                            CornerRadius="14" HeightRequest="48"
+                            Clicked="OnLogMealClicked"
+                            SemanticProperties.Hint="Take a photo to log this meal"/>
+                </Grid>
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
