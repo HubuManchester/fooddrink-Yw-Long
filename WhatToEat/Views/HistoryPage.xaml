@@ -222,6 +222,12 @@
                                                     <Label Text="{Binding LoggedAt, StringFormat='Recorded at {0:h:mm tt}'}"
                                                            FontSize="{DynamicResource FontSmall}"
                                                            TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"/>
+                                                    <!-- Location — shown only when geolocation was captured -->
+                                                    <Label Text="{Binding LocationDisplay}"
+                                                           FontSize="{DynamicResource FontTiny}"
+                                                           TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                                           IsVisible="{Binding HasLocation}"
+                                                           SemanticProperties.Description="{Binding LocationDisplay}"/>
                                                     <Frame BackgroundColor="{AppThemeBinding Light=#FDECD7, Dark=#3A2010}"
                                                            BorderColor="#E07B39" CornerRadius="8"
                                                            Padding="8,4" HasShadow="False"

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
+
 namespace WhatToEat
 {
     public static class MauiProgram
@@ -17,9 +18,8 @@ namespace WhatToEat
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
-
             return builder.Build();
         }
     }

@@ -3,7 +3,7 @@
 namespace WhatToEat.Models
 {
     /// <summary>
-    /// Response from Spoonacular POST /food/images/classify
+    /// Response from LogMeal food image classification API.
     /// </summary>
     public class FoodImageResult
     {
@@ -33,6 +33,7 @@ namespace WhatToEat.Models
 
     /// <summary>
     /// A logged meal entry persisted to the SQLite MealLog table.
+    /// Now includes LocationName captured via Geolocation when the photo is taken.
     /// [Table]         — maps this class to the "MealLog" table.
     /// [PrimaryKey]    — Id is the unique row identifier.
     /// [AutoIncrement] — SQLite assigns the Id automatically on insert.
@@ -50,12 +51,32 @@ namespace WhatToEat.Models
         public string ImagePath { get; set; } = string.Empty;
         public DateTime LoggedAt { get; set; } = DateTime.Now;
 
-        /// <summary>Formatted time for display only — not stored in the database.</summary>
+        /// <summary>
+        /// City / area name captured via Geolocation at time of logging.
+        /// Empty string if location permission was denied or unavailable.
+        /// </summary>
+        public string LocationName { get; set; } = string.Empty;
+
+        // ── Display helpers (not stored in database) ──────────────────
+
+        /// <summary>Formatted time for display only.</summary>
         [Ignore]
         public string TimeDisplay => LoggedAt.ToString("HH:mm");
 
-        /// <summary>Formatted date for display only — not stored in the database.</summary>
+        /// <summary>Formatted date for display only.</summary>
         [Ignore]
         public string DateDisplay => LoggedAt.ToString("dd MMM yyyy");
+
+        /// <summary>
+        /// Shows "📍 Manchester" when location is available,
+        /// empty string otherwise — used by HistoryPage.
+        /// </summary>
+        [Ignore]
+        public string LocationDisplay =>
+            string.IsNullOrWhiteSpace(LocationName) ? string.Empty : $"{LocationName}";
+
+        /// <summary>True when a location was captured — controls label visibility.</summary>
+        [Ignore]
+        public bool HasLocation => !string.IsNullOrWhiteSpace(LocationName);
     }
 }

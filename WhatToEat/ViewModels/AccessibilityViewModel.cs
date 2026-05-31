@@ -9,8 +9,8 @@ namespace WhatToEat.ViewModels
     ///
     /// WCAG 2.1 criteria covered:
     ///   1.4.4  Resize Text        — FontScale updates global ResourceDictionary keys
-    ///   1.4.3  Contrast Minimum   — High Contrast toggle
-    ///   1.4.6  Enhanced Contrast  — pure black/white palette in high-contrast mode
+    ///   1.4.3  Contrast Minimum   — High Contrast toggle forces dark theme
+    ///   1.4.6  Enhanced Contrast  — dark palette provides higher contrast ratios
     ///   2.5.5  Target Size        — TouchTargetHeight grows with FontScale
     ///   4.1.2  Name/Role/Value    — SemanticProperties on all controls (in XAML)
     /// </summary>
@@ -40,7 +40,6 @@ namespace WhatToEat.ViewModels
                 Preferences.Set(KeyFontScale, value);
                 ApplyFontScaleToResources();
                 OnPropertyChanged(nameof(FontScaleLabel));
-                // Also notify local computed props used by AccessibilityPage itself
                 OnPropertyChanged(nameof(FontTiny));
                 OnPropertyChanged(nameof(FontSmall));
                 OnPropertyChanged(nameof(FontBody));
@@ -52,6 +51,7 @@ namespace WhatToEat.ViewModels
             }
         }
 
+        /// <summary>Human-readable label shown next to the slider.</summary>
         public string FontScaleLabel => FontScale switch
         {
             <= 0.85 => "Small",
@@ -60,7 +60,7 @@ namespace WhatToEat.ViewModels
             _ => "Extra Large"
         };
 
-        // Local computed sizes — used only by AccessibilityPage preview
+        // ── Scaled font sizes used by AccessibilityPage preview ────────
         public double FontTiny => Round(10 * FontScale);
         public double FontSmall => Round(12 * FontScale);
         public double FontBody => Round(14 * FontScale);
@@ -68,6 +68,11 @@ namespace WhatToEat.ViewModels
         public double FontLarge => Round(20 * FontScale);
         public double FontTitle => Round(24 * FontScale);
         public double FontDisplay => Round(28 * FontScale);
+
+        /// <summary>
+        /// Minimum touch target height — grows with font scale.
+        /// WCAG 2.5.5 requires at least 44pt.
+        /// </summary>
         public double TouchTargetHeight => FontScale switch
         {
             <= 1.0 => 44,
@@ -77,6 +82,9 @@ namespace WhatToEat.ViewModels
 
         // ════════════════════════════════════════════════════════════════
         // High Contrast
+        // When enabled, forces the app into Dark theme which provides
+        // higher contrast ratios across the whole app (WCAG 1.4.3 / 1.4.6).
+        // No other pages need to be changed — AppThemeBinding handles it.
         // ════════════════════════════════════════════════════════════════
         private bool _highContrast;
         public bool HighContrast
@@ -86,12 +94,21 @@ namespace WhatToEat.ViewModels
             {
                 if (!Set(ref _highContrast, value)) return;
                 Preferences.Set(KeyHighContrast, value);
+
+                // Switch app theme immediately on the UI thread
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (Application.Current == null) return;
+                    Application.Current.UserAppTheme = value
+                        ? AppTheme.Dark        // high contrast → force dark
+                        : AppTheme.Unspecified; // off → follow system setting
+                });
             }
         }
 
         // ════════════════════════════════════════════════════════════════
-        // Core method: writes scaled values into App.Current.Resources
-        // so every DynamicResource binding in every page updates instantly
+        // Writes scaled font values into App.Current.Resources so every
+        // DynamicResource binding in every page updates instantly.
         // ════════════════════════════════════════════════════════════════
         private void ApplyFontScaleToResources()
         {
@@ -109,14 +126,27 @@ namespace WhatToEat.ViewModels
         }
 
         // ════════════════════════════════════════════════════════════════
-        // Load saved preferences and apply on startup
+        // Load saved preferences and apply on startup.
+        // Called from the private constructor so settings are restored
+        // before any page renders.
         // ════════════════════════════════════════════════════════════════
         private void LoadSavedPreferences()
         {
             _fontScale = Preferences.Get(KeyFontScale, 1.0);
             _highContrast = Preferences.Get(KeyHighContrast, false);
+
             // Apply after a short delay so Application.Current.Resources is ready
-            MainThread.BeginInvokeOnMainThread(ApplyFontScaleToResources);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                // Restore font scale
+                ApplyFontScaleToResources();
+
+                // Restore high contrast / theme
+                if (Application.Current != null)
+                    Application.Current.UserAppTheme = _highContrast
+                        ? AppTheme.Dark
+                        : AppTheme.Unspecified;
+            });
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -125,8 +155,10 @@ namespace WhatToEat.ViewModels
         private static double Round(double v) => Math.Round(v, 1);
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
         private void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
         private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;

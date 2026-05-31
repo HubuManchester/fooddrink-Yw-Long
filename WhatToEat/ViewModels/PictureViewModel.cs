@@ -9,9 +9,10 @@ namespace WhatToEat.ViewModels
     /// <summary>
     /// ViewModel for PicturePage.
     /// Hardware features used:
-    ///   3. Camera  — CapturePhotoAsync (take food photo)
-    ///   4. Flash   — Toggles device torch/flashlight via IFlashlight
-    ///   Computer vision — Spoonacular image classification API
+    ///   3. Camera      — CapturePhotoAsync (take food photo)
+    ///   4. Flash       — Toggles device torch/flashlight via IFlashlight
+    ///   5. Geolocation — Records the location where the meal was photographed
+    ///   Computer vision — LogMeal image classification API
     /// </summary>
     public class PictureViewModel : INotifyPropertyChanged
     {
@@ -34,9 +35,10 @@ namespace WhatToEat.ViewModels
                 Calories = 0;
                 HasResult = false;
                 ErrorMessage = string.Empty;
+                _locationName = string.Empty;
+                LocationDisplay = string.Empty;
             }, () => !IsBusy);
 
-            // ── Flash / Torch toggle command ──────────────────────────────
             ToggleFlashCommand = new Command(
                 async () => await ToggleFlashAsync(),
                 () => !IsBusy);
@@ -96,9 +98,18 @@ namespace WhatToEat.ViewModels
             set => Set(ref _statusText, value);
         }
 
-        // ── Flash / Torch ─────────────────────────────────────────────────
+        // ── Location display ──────────────────────────────────────────────
+        private string _locationName = string.Empty;
+        private string _locationDisplay = string.Empty;
 
-        /// <summary>True while the device torch is on.</summary>
+        /// <summary>Shows "📍 Manchester" on the result card, empty if no location.</summary>
+        public string LocationDisplay
+        {
+            get => _locationDisplay;
+            set => Set(ref _locationDisplay, value);
+        }
+
+        // ── Flash / Torch ─────────────────────────────────────────────────
         private bool _isFlashOn;
         public bool IsFlashOn
         {
@@ -110,14 +121,9 @@ namespace WhatToEat.ViewModels
                 OnPropertyChanged(nameof(FlashLabel));
             }
         }
-
-        /// <summary>Icon text shown on the flash toggle button.</summary>
         public string FlashIcon => _isFlashOn ? "🔦" : "🔦";
-
-        /// <summary>Label text shown on the flash toggle button.</summary>
         public string FlashLabel => _isFlashOn ? "Flash On" : "Flash Off";
 
-        /// <summary>True when the device supports a torch/flashlight.</summary>
         private bool _isFlashSupported = true;
         public bool IsFlashSupported
         {
@@ -125,31 +131,19 @@ namespace WhatToEat.ViewModels
             set => Set(ref _isFlashSupported, value);
         }
 
-        // Keeps the captured file path for logging
         private string _capturedImagePath = string.Empty;
 
         // ── Commands ─────────────────────────────────────────────────────
         public ICommand TakePhotoCommand { get; }
         public ICommand LogMealCommand { get; }
         public ICommand RetakeCommand { get; }
-
-        /// <summary>Toggles the device torch on or off. Hardware feature: Flash/Flashlight.</summary>
         public ICommand ToggleFlashCommand { get; }
 
         // ── Flash toggle — Hardware feature 4 ────────────────────────────
-
-        /// <summary>
-        /// Turns the device torch on or off.
-        /// Useful when photographing food in low-light environments.
-        /// Turns the flash OFF automatically after a photo is taken.
-        /// Falls back gracefully if the flashlight is not available on the device.
-        /// Hardware feature: Flash / Flashlight.
-        /// </summary>
         private async Task ToggleFlashAsync()
         {
             try
             {
-                // Check whether the flashlight is available on this device
                 bool supported = await Flashlight.Default.IsSupportedAsync();
                 if (!supported)
                 {
@@ -190,7 +184,6 @@ namespace WhatToEat.ViewModels
         {
             try
             {
-                // Check camera permission
                 var status = await Permissions.RequestAsync<Permissions.Camera>();
                 if (status != PermissionStatus.Granted)
                 {
@@ -198,13 +191,11 @@ namespace WhatToEat.ViewModels
                     return;
                 }
 
-                // Open camera
                 var photo = await MediaPicker.Default.CapturePhotoAsync(
                     new MediaPickerOptions { Title = "Take a photo of your food" });
 
-                if (photo == null) return; // user cancelled
+                if (photo == null) return;
 
-                // Auto-turn off flash once the photo is taken
                 if (_isFlashOn)
                 {
                     await Flashlight.Default.TurnOffAsync();
@@ -215,13 +206,21 @@ namespace WhatToEat.ViewModels
                 ErrorMessage = string.Empty;
                 StatusText = "Identifying your food...";
 
-                // Show preview immediately
                 _capturedImagePath = photo.FullPath;
                 PhotoSource = ImageSource.FromFile(photo.FullPath);
 
-                // Send to Spoonacular image classification (computer vision)
+                // Run image recognition and geolocation in parallel
                 await using var stream = await photo.OpenReadAsync();
-                var result = await _mealService.ClassifyFoodImageAsync(stream, photo.FileName);
+                var recognitionTask = _mealService.ClassifyFoodImageAsync(stream, photo.FileName);
+                var locationTask = GetLocationNameAsync();
+
+                await Task.WhenAll(recognitionTask, locationTask);
+
+                var result = await recognitionTask;
+                _locationName = await locationTask;
+                LocationDisplay = string.IsNullOrWhiteSpace(_locationName)
+                    ? string.Empty
+                    : $"📍 {_locationName}";
 
                 if (result?.Category == null)
                 {
@@ -230,7 +229,6 @@ namespace WhatToEat.ViewModels
                     return;
                 }
 
-                // Populate results
                 FoodName = CapitaliseFirst(result.Category.Name);
                 Calories = (int)(result.Nutrition?.Calories?.Value ?? 0);
                 HasResult = true;
@@ -255,6 +253,55 @@ namespace WhatToEat.ViewModels
             }
         }
 
+        // ── Geolocation — Hardware feature 5 ─────────────────────────────
+        /// <summary>
+        /// Gets a human-readable location name (city / admin area) using
+        /// the device GPS and reverse geocoding.
+        /// Returns empty string silently if permission denied or unavailable.
+        /// Hardware feature: Geolocation / Geocoding.
+        /// </summary>
+        private async Task<string> GetLocationNameAsync()
+        {
+            try
+            {
+                // Request permission first
+                var status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+                if (status != PermissionStatus.Granted)
+                {
+                    Console.WriteLine("[PictureViewModel] Location permission denied.");
+                    return string.Empty;
+                }
+
+                // Get last known location first (fast), then try precise
+                var location = await Geolocation.Default.GetLastKnownLocationAsync()
+                               ?? await Geolocation.Default.GetLocationAsync(
+                                   new GeolocationRequest(GeolocationAccuracy.Low,
+                                       TimeSpan.FromSeconds(5)));
+
+                if (location == null) return string.Empty;
+
+                // Reverse geocode to get city name
+                var placemarks = await Geocoding.Default.GetPlacemarksAsync(
+                    location.Latitude, location.Longitude);
+
+                var place = placemarks?.FirstOrDefault();
+                if (place == null) return string.Empty;
+
+                // Return the most specific name available
+                return place.Locality                // city
+                    ?? place.SubAdminArea            // district
+                    ?? place.AdminArea               // state/county
+                    ?? place.CountryName             // country fallback
+                    ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                // Location failure is non-fatal — meal still gets logged without it
+                Console.WriteLine($"[PictureViewModel] Location error: {ex.Message}");
+                return string.Empty;
+            }
+        }
+
         // ── Log meal to history ───────────────────────────────────────────
         private async Task LogMealAsync()
         {
@@ -267,7 +314,8 @@ namespace WhatToEat.ViewModels
                     FoodName = FoodName,
                     Calories = Calories,
                     ImagePath = _capturedImagePath,
-                    LoggedAt = DateTime.Now
+                    LoggedAt = DateTime.Now,
+                    LocationName = _locationName      // ← save location
                 });
 
                 HapticFeedback.Default.Perform(HapticFeedbackType.Click);

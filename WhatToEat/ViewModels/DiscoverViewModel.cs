@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using WhatToEat.Models;
 using WhatToEat.Services;
-using CommunityToolkit.Maui.Media;
 
 namespace WhatToEat.ViewModels
 {
@@ -11,11 +10,8 @@ namespace WhatToEat.ViewModels
     /// ViewModel for DiscoverPage.
     /// Receives mealId via Shell query parameter (?mealId=xxx).
     /// Hardware features:
-    ///   1. Text-to-Speech  — ReadAloudCommand
-    ///   2. Microphone/STT  — VoiceSearchCommand
-    ///      Requires: CommunityToolkit.Maui NuGet package
-    ///      MauiProgram.cs: .UseMauiCommunityToolkit()
-    ///      AndroidManifest: RECORD_AUDIO permission
+    ///   1. Text-to-Speech — ReadAloudCommand reads recipe aloud
+    /// Manual search via text input replaces voice search.
     /// </summary>
     public class DiscoverViewModel : INotifyPropertyChanged, IQueryAttributable
     {
@@ -24,15 +20,21 @@ namespace WhatToEat.ViewModels
 
         public DiscoverViewModel()
         {
-            ReadAloudCommand = new Command(async () => await ReadAloudAsync(),
-                                             () => Recipe != null && !IsBusy);
-            VoiceSearchCommand = new Command(async () => await VoiceSearchAsync(),
-                                             () => !IsListening && !IsBusy);
-            RetryCommand = new Command(async () => await LoadRecipeAsync(_lastMealId),
-                                             () => !IsBusy);
+            ReadAloudCommand = new Command(
+                async () => await ReadAloudAsync(),
+                () => Recipe != null && !IsBusy);
+
+            RetryCommand = new Command(
+                async () => await LoadRecipeAsync(_lastMealId),
+                () => !IsBusy);
+
+            // Text search command — triggered by the search button
+            TextSearchCommand = new Command(
+                async () => await TextSearchAsync(),
+                () => !IsBusy && !string.IsNullOrWhiteSpace(SearchText));
         }
 
-        // ── IQueryAttributable ───────────────────────────────────────────
+        // ── IQueryAttributable ────────────────────────────────────────────
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.TryGetValue("mealId", out var raw)
@@ -42,7 +44,7 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        // ── Properties ───────────────────────────────────────────────────
+        // ── Properties ────────────────────────────────────────────────────
         private bool _isBusy;
         public bool IsBusy
         {
@@ -55,19 +57,6 @@ namespace WhatToEat.ViewModels
             }
         }
         public bool IsNotBusy => !_isBusy;
-
-        private bool _isListening;
-        public bool IsListening
-        {
-            get => _isListening;
-            set
-            {
-                Set(ref _isListening, value);
-                OnPropertyChanged(nameof(IsNotListening));
-                RefreshCanExecute();
-            }
-        }
-        public bool IsNotListening => !_isListening;
 
         private string _errorMessage = string.Empty;
         public string ErrorMessage
@@ -94,12 +83,25 @@ namespace WhatToEat.ViewModels
         public string TimeLabel => Recipe != null ? $"{Recipe.ReadyInMinutes} min" : "--";
         public string ServingsLabel => Recipe != null ? $"{Recipe.Servings} servings" : "--";
 
-        // ── Commands ─────────────────────────────────────────────────────
-        public ICommand ReadAloudCommand { get; }
-        public ICommand VoiceSearchCommand { get; }
-        public ICommand RetryCommand { get; }
+        // ── Text search ───────────────────────────────────────────────────
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                Set(ref _searchText, value);
+                // Refresh CanExecute so button enables/disables as user types
+                (TextSearchCommand as Command)?.ChangeCanExecute();
+            }
+        }
 
-        // ── Load recipe detail ───────────────────────────────────────────
+        // ── Commands ──────────────────────────────────────────────────────
+        public ICommand ReadAloudCommand { get; }
+        public ICommand RetryCommand { get; }
+        public ICommand TextSearchCommand { get; }
+
+        // ── Load recipe by ID (from HomePage) ────────────────────────────
         private async Task LoadRecipeAsync(int mealId)
         {
             if (mealId <= 0) return;
@@ -133,122 +135,80 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        // ── TTS — Hardware feature 1 ─────────────────────────────────────
+        // ── Text search ───────────────────────────────────────────────────
+        /// <summary>
+        /// Searches Spoonacular for a recipe matching the user's typed query
+        /// and loads the first result's full detail.
+        /// </summary>
+        private async Task TextSearchAsync()
+        {
+            var query = SearchText.Trim();
+            if (string.IsNullOrWhiteSpace(query)) return;
+
+            IsBusy = true;
+            ErrorMessage = string.Empty;
+            Recipe = null;
+
+            try
+            {
+                var found = await _mealService.SearchAndGetFirstDetailAsync(query);
+                if (found != null)
+                {
+                    Recipe = found;
+                    _lastMealId = found.Id;
+                    SearchText = string.Empty; // clear input after success
+                }
+                else
+                {
+                    ErrorMessage = $"No recipes found for \"{query}\". Try another keyword.";
+                }
+            }
+            catch (HttpRequestException)
+            {
+                ErrorMessage = "Network error. Please check your connection.";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Search error: {ex.Message}";
+                Console.WriteLine($"[DiscoverViewModel] TextSearch error: {ex}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        // ── TTS — Hardware feature 1 ──────────────────────────────────────
         private async Task ReadAloudAsync()
         {
             if (Recipe == null) return;
 
             try
             {
-                var locales = await Task.Run(() => TextToSpeech.Default.GetLocalesAsync());
-                var locale = locales.FirstOrDefault(l => l.Language.StartsWith("en"))
-                             ?? locales.FirstOrDefault();
-
-                if (locale == null)
-                {
-                    ErrorMessage = "No TTS language available on this device.";
-                    return;
-                }
-
                 var ingredientList = string.Join(", ",
                     Recipe.ExtendedIngredients.Take(5).Select(i => i.Name));
+
                 var stepText = string.Join(" ",
                     Recipe.Steps.Take(3).Select(s => $"Step {s.Number}. {s.Step}"));
+
                 var script = $"{Recipe.Title}. " +
-                             $"Ready in {Recipe.ReadyInMinutes} minutes, serves {Recipe.Servings}. " +
+                             $"Ready in {Recipe.ReadyInMinutes} minutes, " +
+                             $"serves {Recipe.Servings}. " +
                              $"You will need: {ingredientList}. " +
                              $"Here are the first steps. {stepText}";
 
-                await Task.Delay(300);
-
-                // ✅ 传入 locale，指定英语
-                await TextToSpeech.Default.SpeakAsync(script, new SpeechOptions
+                await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    Pitch = 1.0f,
-                    Volume = 1.0f,
-                    Locale = locale
+                    await TextToSpeech.Default.SpeakAsync(script, new SpeechOptions
+                    {
+                        Pitch = 1.0f,
+                        Volume = 1.0f
+                    });
                 });
             }
             catch (Exception ex)
             {
                 ErrorMessage = $"Speech error: {ex.Message}";
-            }
-        }
-
-        // ── Voice search — Hardware feature 2 (Microphone / STT) ─────────
-        /// <summary>
-        /// Listens to the user's spoken food query, searches Spoonacular,
-        /// and loads the first matching recipe.
-        /// Requires CommunityToolkit.Maui — see class summary for setup.
-        /// </summary>
-        private async Task VoiceSearchAsync()
-        {
-            try
-            {
-                IsListening = true;
-                ErrorMessage = string.Empty;
-
-                var status = await Permissions.RequestAsync<Permissions.Microphone>();
-                if (status != PermissionStatus.Granted)
-                {
-                    ErrorMessage = "Microphone permission is required for voice search.";
-                    return;
-                }
-
-                // ✅ 用 CancellationToken 设置 10 秒超时
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-
-                SpeechToTextResult result;
-                try
-                {
-                    result = await SpeechToText.Default.ListenAsync(
-                        System.Globalization.CultureInfo.GetCultureInfo("en-US"), // ✅ 强制用英语，不用 CurrentCulture
-                        new Progress<string>(partial =>
-                        {
-                            // 有中间结果就直接用，不等最终结果
-                            if (!string.IsNullOrWhiteSpace(partial))
-                                MainThread.BeginInvokeOnMainThread(() =>
-                                    ErrorMessage = $"Hearing: {partial}");
-                        }),
-                        cts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    ErrorMessage = "Listening timed out. Please try again.";
-                    return;
-                }
-
-                // ✅ 检查 Text 而不只看 IsSuccessful，部分真机 IsSuccessful=false 但 Text 有值
-                var recognisedText = result.Text?.Trim();
-                if (string.IsNullOrWhiteSpace(recognisedText))
-                {
-                    ErrorMessage = "Could not understand. Please try again.";
-                    return;
-                }
-
-                IsListening = false;
-                IsBusy = true;
-
-                var found = await _mealService.SearchAndGetFirstDetailAsync(recognisedText);
-                if (found != null)
-                {
-                    Recipe = found;
-                    _lastMealId = found.Id;
-                    ErrorMessage = string.Empty;
-                }
-                else
-                {
-                    ErrorMessage = $"No recipes found for \"{recognisedText}\". Try another food name.";
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Voice search error: {ex.Message}";
-            }
-            finally
-            {
-                IsListening = false;
-                IsBusy = false;
             }
         }
 
@@ -269,8 +229,8 @@ namespace WhatToEat.ViewModels
         private void RefreshCanExecute()
         {
             (ReadAloudCommand as Command)?.ChangeCanExecute();
-            (VoiceSearchCommand as Command)?.ChangeCanExecute();
             (RetryCommand as Command)?.ChangeCanExecute();
+            (TextSearchCommand as Command)?.ChangeCanExecute();
         }
     }
 }
