@@ -15,6 +15,9 @@ namespace WhatToEat.ViewModels
     /// </summary>
     public class HistoryViewModel : INotifyPropertyChanged
     {
+        // CancellationTokenSource for TTS cancellation
+        private CancellationTokenSource? _ttsCancellationTokenSource;
+
         /// <summary>
         /// Initialize commands and collection.
         /// </summary>
@@ -25,7 +28,7 @@ namespace WhatToEat.ViewModels
             RefreshCommand = new Command(async () => await LoadHistoryAsync());
             DeleteCommand = new Command<MealLogEntry>(DeleteEntry, e => !IsBusy);
             ClearAllCommand = new Command(async () => await ClearAllAsync(), () => HasEntries && !IsBusy);
-            ReadSummaryCommand = new Command(async () => await ReadSummaryAsync(), () => HasEntries && !IsBusy);
+            ReadSummaryCommand = new Command(async () => await ToggleReadSummaryAsync(), () => HasEntries && !IsBusy);
             ToggleStatsCommand = new Command(ToggleStats);
         }
 
@@ -168,6 +171,26 @@ namespace WhatToEat.ViewModels
         /// Formatted text for total meal count display.
         /// </summary>
         public string TotalMealsLabel => _totalMeals == 1 ? "1 meal" : $"{_totalMeals} meals";
+
+        // TTS play/pause state
+        private bool _isSpeaking;
+        /// <summary>
+        /// True while TTS is actively speaking the summary.
+        /// </summary>
+        public bool IsSpeaking
+        {
+            get => _isSpeaking;
+            set
+            {
+                Set(ref _isSpeaking, value);
+                OnPropertyChanged(nameof(ReadSummaryButtonText));
+            }
+        }
+
+        /// <summary>
+        /// Button label toggles between Read Summary and Stop.
+        /// </summary>
+        public string ReadSummaryButtonText => _isSpeaking ? "Stop" : "Read Summary";
         #endregion
 
         #region Commands
@@ -187,7 +210,7 @@ namespace WhatToEat.ViewModels
         public ICommand ClearAllCommand { get; }
 
         /// <summary>
-        /// Read meal summary via device Text-to-Speech.
+        /// Read meal summary via device Text-to-Speech (toggle play/pause).
         /// </summary>
         public ICommand ReadSummaryCommand { get; }
 
@@ -311,14 +334,40 @@ namespace WhatToEat.ViewModels
         }
         #endregion
 
-        #region Text-to-Speech Summary
+        #region Text-to-Speech Summary (Toggle play/pause)
+
         /// <summary>
-        /// Generate summary text and read aloud using device TTS engine.
+        /// Toggles between reading the summary and stopping the speech.
+        /// First tap → reads the summary aloud.
+        /// Second tap → cancels speech immediately.
         /// </summary>
-        private async Task ReadSummaryAsync()
+        private async Task ToggleReadSummaryAsync()
         {
+            if (_isSpeaking)
+            {
+                // Cancel current speech
+                CancelSpeaking();
+                return;
+            }
+
+            await StartSpeakingSummaryAsync();
+        }
+
+        /// <summary>
+        /// Starts reading the meal summary aloud
+        /// </summary>
+        private async Task StartSpeakingSummaryAsync()
+        {
+            // Cancel any ongoing speech
+            CancelSpeaking();
+
+            // Create new CancellationTokenSource
+            _ttsCancellationTokenSource = new CancellationTokenSource();
+
             try
             {
+                IsSpeaking = true;
+
                 var locales = await Task.Run(() => TextToSpeech.Default.GetLocalesAsync());
                 var targetLocale = locales.FirstOrDefault(l => l.Language.StartsWith("en"))
                                  ?? locales.FirstOrDefault();
@@ -348,19 +397,46 @@ namespace WhatToEat.ViewModels
 
                 await Task.Delay(300);
 
-                await TextToSpeech.Default.SpeakAsync(speechContent, new SpeechOptions
-                {
-                    Pitch = 1.0f,
-                    Volume = 1.0f,
-                    Locale = targetLocale
-                });
+                await TextToSpeech.Default.SpeakAsync(
+                    speechContent,
+                    new SpeechOptions
+                    {
+                        Pitch = 1.0f,
+                        Volume = 1.0f,
+                        Locale = targetLocale
+                    },
+                    cancelToken: _ttsCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // User cancelled speech, this is expected behavior
+                Console.WriteLine("[HistoryViewModel] Speech was cancelled by user.");
             }
             catch (Exception ex)
             {
                 ErrorMessage = $"Speech service error: {ex.Message}";
                 Console.WriteLine($"ReadSummary Error: {ex}");
             }
+            finally
+            {
+                // Reset state after speech finishes (whether completed or cancelled)
+                IsSpeaking = false;
+                _ttsCancellationTokenSource?.Dispose();
+                _ttsCancellationTokenSource = null;
+            }
         }
+
+        /// <summary>
+        /// Cancels the current speech if any is in progress
+        /// </summary>
+        private void CancelSpeaking()
+        {
+            if (_ttsCancellationTokenSource != null && !_ttsCancellationTokenSource.IsCancellationRequested)
+            {
+                _ttsCancellationTokenSource.Cancel();
+            }
+        }
+
         #endregion
 
         #region Helper Methods

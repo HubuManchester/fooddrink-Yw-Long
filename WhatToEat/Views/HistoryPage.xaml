@@ -124,7 +124,7 @@
                   Padding="24,12,24,4"
                   ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Button Grid.Column="0"
-                        Text="Read Summary"
+                        Text="{Binding ReadSummaryButtonText}"
                         FontSize="{DynamicResource FontSmall}"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
@@ -168,8 +168,8 @@
                     <DataTemplate x:DataType="models:MealDayGroup">
                         <VerticalStackLayout Spacing="0">
 
-                            <!-- Group Header: Date + Meal Count + Daily Total Calories -->
-                            <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,16,0,6" ColumnSpacing="12">
+                            <!-- Group Header: Date + Meal Count + Daily Total Calories + Read Button -->
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Padding="0,16,0,6" ColumnSpacing="12">
                                 <Label Grid.Column="0"
                                        Text="{Binding DateLabel}"
                                        FontSize="{DynamicResource FontBody}" FontAttributes="Bold"
@@ -189,10 +189,22 @@
                                            FontSize="{DynamicResource FontSmall}" FontAttributes="Bold"
                                            TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"/>
                                 </Frame>
+                                <Button Grid.Column="3"
+                                        Text="{Binding ReadGroupButtonText}"
+                                        FontSize="{DynamicResource FontSmall}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
+                                        BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}"
+                                        BorderWidth="1"
+                                        CornerRadius="10"
+                                        WidthRequest="60" HeightRequest="32"
+                                        Command="{Binding ReadGroupCommand}"
+                                        Margin="8,0,0,0"
+                                        VerticalOptions="Center"/>
                             </Grid>
 
                             <!-- Meals of this day -->
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding .}" Spacing="0">
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Meals}" Spacing="0">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="models:MealLogEntry">
                                         <Frame

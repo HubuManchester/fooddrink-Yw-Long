@@ -10,7 +10,7 @@ namespace WhatToEat.ViewModels
     /// ViewModel for DiscoverPage.
     /// Receives mealId via Shell query parameter (?mealId=xxx).
     /// Hardware features:
-    ///   1. Text-to-Speech — ReadAloudCommand reads recipe aloud
+    ///   1. Text-to-Speech — ReadAloudCommand reads recipe aloud (toggle play/pause)
     /// Manual search via text input replaces voice search.
     /// </summary>
     public class DiscoverViewModel : INotifyPropertyChanged, IQueryAttributable
@@ -18,10 +18,14 @@ namespace WhatToEat.ViewModels
         private readonly MealService _mealService = new();
         private int _lastMealId;
 
+        // CancellationTokenSource for TTS cancellation
+        private CancellationTokenSource? _ttsCancellationTokenSource;
+
         public DiscoverViewModel()
         {
+            // Toggle TTS play/pause on each tap
             ReadAloudCommand = new Command(
-                async () => await ReadAloudAsync(),
+                async () => await ToggleReadAloudAsync(),
                 () => Recipe != null && !IsBusy);
 
             RetryCommand = new Command(
@@ -82,6 +86,21 @@ namespace WhatToEat.ViewModels
         public bool HasRecipe => _recipe != null;
         public string TimeLabel => Recipe != null ? $"{Recipe.ReadyInMinutes} min" : "--";
         public string ServingsLabel => Recipe != null ? $"{Recipe.Servings} servings" : "--";
+
+        // TTS play/pause state
+        private bool _isSpeaking;
+        public bool IsSpeaking
+        {
+            get => _isSpeaking;
+            set
+            {
+                Set(ref _isSpeaking, value);
+                OnPropertyChanged(nameof(ReadAloudButtonText));
+            }
+        }
+
+        // Button label toggles between Read Aloud and Stop
+        public string ReadAloudButtonText => _isSpeaking ? "Stop" : "Read Aloud";
 
         // ── Text search ───────────────────────────────────────────────────
         private string _searchText = string.Empty;
@@ -178,13 +197,43 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        // ── TTS — Hardware feature 1 ──────────────────────────────────────
-        private async Task ReadAloudAsync()
+        // ── TTS — Hardware feature 1 (Toggle play/pause) ──────────────────────
+
+        /// <summary>
+        /// Toggles between speaking the recipe and stopping the speech.
+        /// First tap → speaks the recipe details.
+        /// Second tap → cancels speech immediately.
+        /// </summary>
+        private async Task ToggleReadAloudAsync()
+        {
+            if (_isSpeaking)
+            {
+                // Cancel current speech
+                CancelSpeaking();
+                return;
+            }
+
+            if (Recipe == null) return;
+            await StartSpeakingAsync();
+        }
+
+        /// <summary>
+        /// Starts reading the recipe aloud
+        /// </summary>
+        private async Task StartSpeakingAsync()
         {
             if (Recipe == null) return;
 
+            // Cancel any ongoing speech
+            CancelSpeaking();
+
+            // Create new CancellationTokenSource
+            _ttsCancellationTokenSource = new CancellationTokenSource();
+
             try
             {
+                IsSpeaking = true;
+
                 var ingredientList = string.Join(", ",
                     Recipe.ExtendedIngredients.Take(5).Select(i => i.Name));
 
@@ -199,16 +248,43 @@ namespace WhatToEat.ViewModels
 
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await TextToSpeech.Default.SpeakAsync(script, new SpeechOptions
-                    {
-                        Pitch = 1.0f,
-                        Volume = 1.0f
-                    });
+                    await TextToSpeech.Default.SpeakAsync(
+                        script,
+                        new SpeechOptions
+                        {
+                            Pitch = 1.0f,
+                            Volume = 1.0f
+                        },
+                        cancelToken: _ttsCancellationTokenSource!.Token);
                 });
+            }
+            catch (OperationCanceledException)
+            {
+                // User cancelled speech, this is expected behavior
+                Console.WriteLine("[DiscoverViewModel] Speech was cancelled by user.");
             }
             catch (Exception ex)
             {
                 ErrorMessage = $"Speech error: {ex.Message}";
+                Console.WriteLine($"[DiscoverViewModel] Speech error: {ex}");
+            }
+            finally
+            {
+                // Reset state after speech finishes (whether completed or cancelled)
+                IsSpeaking = false;
+                _ttsCancellationTokenSource?.Dispose();
+                _ttsCancellationTokenSource = null;
+            }
+        }
+
+        /// <summary>
+        /// Cancels the current speech if any is in progress
+        /// </summary>
+        private void CancelSpeaking()
+        {
+            if (_ttsCancellationTokenSource != null && !_ttsCancellationTokenSource.IsCancellationRequested)
+            {
+                _ttsCancellationTokenSource.Cancel();
             }
         }
 

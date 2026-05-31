@@ -23,7 +23,7 @@ namespace WhatToEat.Services
 
         public MealService()
         {
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -159,11 +159,6 @@ namespace WhatToEat.Services
             }
         }
 
-        // ════════════════════════════════════════════════════════════════
-        // 图片压缩
-        // Android  → 用 Android.Graphics.Bitmap（最可靠）
-        // 其他平台 → 纯字节降质量兜底
-        // ════════════════════════════════════════════════════════════════
         private static byte[] CompressImage(byte[] input)
         {
             if (input.Length <= MaxBytes)

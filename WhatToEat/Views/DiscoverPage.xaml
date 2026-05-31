@@ -212,7 +212,7 @@
                 <Grid Padding="24,16,24,32"
                       ColumnDefinitions="*,*" ColumnSpacing="12">
                     <Button Grid.Column="0"
-                            Text="Read Aloud"
+                            Text="{Binding ReadAloudButtonText}"
                             FontSize="{DynamicResource FontSmall}"
                             BackgroundColor="Transparent"
                             TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"

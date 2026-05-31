@@ -13,6 +13,19 @@ namespace WhatToEat.Views;
 /// Accelerometer lifecycle:
 ///   Start on OnAppearing  → active only while user is on this page.
 ///   Stop  on OnDisappearing → no background drain on other pages.
+///
+/// Fix notes (v2):
+///   • Removed ScrollToSelected() — it was the root cause of the selected card
+///     "jumping to the far right". MAUI's CollectionView ScrollTo with
+///     ScrollToPosition.Center on a horizontal list can miscalculate item
+///     positions when a DataTrigger simultaneously resizes the card border,
+///     causing an overshoot to the last item.
+///     The selection state is now communicated purely through the IsSelected
+///     binding + two separate Border overlays in XAML (selected / unselected).
+///     This is visually equivalent and avoids any programmatic scroll conflict.
+///
+///   • Pull-to-refresh is handled by RefreshView in XAML bound to
+///     HomeViewModel.RefreshCommand / IsRefreshing — no code-behind needed.
 /// </summary>
 public partial class HomePage : ContentPage
 {
@@ -21,11 +34,9 @@ public partial class HomePage : ContentPage
     private double _totalRotation = 0;
 
     // ── Shake / Accelerometer ─────────────────────────────────────────────
-    // Total-acceleration threshold in G-force units.
-    // 1 G = gravity at rest. 2.5 G is a deliberate shake, not normal movement.
     private const double ShakeThreshold = 2.5;
     private DateTime _lastShakeTime = DateTime.MinValue;
-    private const int ShakeCooldownMs = 2000; // prevent rapid re-triggering
+    private const int ShakeCooldownMs = 2000;
 
     // ── Wheel segment colours ─────────────────────────────────────────────
     private static readonly Color[] SegmentColors =
@@ -46,36 +57,26 @@ public partial class HomePage : ContentPage
         _vm = new HomeViewModel();
         BindingContext = _vm;
 
-        // Attach the wheel drawable (custom IDrawable)
         WheelCanvas.Drawable = new WheelDrawable(
             HomeViewModel.Categories, SegmentColors);
 
-        // Subscribe to ViewModel events
         _vm.SpinRequested += OnSpinRequested;
 
-        _vm.PropertyChanged += (s, e) =>
-        {
-            if (e.PropertyName == nameof(HomeViewModel.SelectedMeal))
-                ScrollToSelected();
-        };
+        // ── FIX: No longer subscribing to PropertyChanged for scroll.
+        //    Removed ScrollToSelected entirely — it caused the jump-to-end bug.
+        //    The XAML uses two separate Border elements (selected/unselected)
+        //    instead of a DataTrigger that mutated StrokeThickness, which was
+        //    also contributing to layout recalculation during scroll.
     }
 
-    // ── Page lifecycle — Accelerometer management ─────────────────────────
+    // ── Page lifecycle ────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Start the accelerometer each time the page becomes visible.
-    /// Wraps in try-catch so Windows (no accelerometer) continues gracefully.
-    /// </summary>
     protected override void OnAppearing()
     {
         base.OnAppearing();
         StartAccelerometer();
     }
 
-    /// <summary>
-    /// Stop the accelerometer and unsubscribe events when leaving the page.
-    /// Prevents battery drain and ghost-shakes triggering on other tabs.
-    /// </summary>
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
@@ -85,11 +86,6 @@ public partial class HomePage : ContentPage
 
     // ── Accelerometer / Shake ─────────────────────────────────────────────
 
-    /// <summary>
-    /// Starts monitoring the accelerometer sensor.
-    /// SensorSpeed.Game gives ~60 Hz updates — responsive for shake detection.
-    /// Falls back silently on platforms that don't support it (e.g. Windows).
-    /// </summary>
     private void StartAccelerometer()
     {
         try
@@ -102,7 +98,6 @@ public partial class HomePage : ContentPage
         }
         catch (FeatureNotSupportedException)
         {
-            // Sensor absent (Windows desktop etc.) — fail silently, no crash
             Console.WriteLine("[HomePage] Accelerometer not supported on this platform.");
         }
         catch (Exception ex)
@@ -111,9 +106,6 @@ public partial class HomePage : ContentPage
         }
     }
 
-    /// <summary>
-    /// Stops the accelerometer sensor and removes the event handler.
-    /// </summary>
     private void StopAccelerometer()
     {
         try
@@ -129,14 +121,6 @@ public partial class HomePage : ContentPage
         }
     }
 
-    /// <summary>
-    /// Fires on every accelerometer reading (~60 Hz).
-    /// Computes the vector magnitude; if it exceeds ShakeThreshold and the
-    /// cooldown has elapsed, triggers SpinAsync on the UI thread.
-    ///
-    /// Magnitude formula: √(x² + y² + z²)
-    /// At rest this equals ~1 G (gravity). A firm shake peaks above 2.5 G.
-    /// </summary>
     private void OnAccelerometerReadingChanged(object? sender, AccelerometerChangedEventArgs e)
     {
         var acc = e.Reading.Acceleration;
@@ -149,11 +133,8 @@ public partial class HomePage : ContentPage
         {
             _lastShakeTime = DateTime.UtcNow;
 
-            // Accelerometer fires on a background thread — marshal back to UI thread
             MainThread.BeginInvokeOnMainThread(async () =>
             {
-                // Trigger the same spin event the button uses
-                // The ViewModel picks a random category and raises SpinRequested
                 if (_vm.SpinCommand.CanExecute(null))
                     _vm.SpinCommand.Execute(null);
             });
@@ -162,11 +143,6 @@ public partial class HomePage : ContentPage
 
     // ── Wheel animation ───────────────────────────────────────────────────
 
-    /// <summary>
-    /// Animates the wheel to the winning segment index.
-    /// Called by both the Spin button (via ViewModel event) and shake-to-spin.
-    /// Adds haptic feedback on landing — hardware feature.
-    /// </summary>
     private async void OnSpinRequested(object? sender, int targetIndex)
     {
         if (_isSpinning) return;
@@ -188,42 +164,19 @@ public partial class HomePage : ContentPage
         double spinAmount = extraRounds * 360.0 + needed;
         _totalRotation += spinAmount;
 
-        // Animate wheel rotation
         await WheelCanvas.RotateTo(_totalRotation, 2200, Easing.CubicOut);
 
-        // Haptic feedback on landing — hardware feature (tactile confirmation)
         HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
 
-        // Bounce the result label for visual feedback
-        await ResultFrame.ScaleTo(1.1, 120, Easing.CubicOut);
-        await ResultFrame.ScaleTo(1.0, 120, Easing.CubicIn);
+        await ResultFrame.ScaleTo(1.12, 110, Easing.CubicOut);
+        await ResultFrame.ScaleTo(1.0, 110, Easing.CubicIn);
 
         _isSpinning = false;
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Scrolls the meal card list to keep the selected meal centred.
-    /// </summary>
-    private void ScrollToSelected()
-    {
-        if (_vm.SelectedMeal == null) return;
-        var idx = _vm.RecommendedMeals.IndexOf(_vm.SelectedMeal);
-        if (idx >= 0)
-            MealCards.ScrollTo(idx,
-                position: ScrollToPosition.Center,
-                animate: true);
-    }
 }
 
-// ── WheelDrawable — Custom IDrawable for the spin wheel ──────────────────────
+// ── WheelDrawable ─────────────────────────────────────────────────────────────
 
-/// <summary>
-/// Draws the food-category spin wheel using MAUI's GraphicsView / IDrawable API.
-/// Renders coloured segments, dividing lines, emoji icons, and category labels.
-/// Rotated by the page's RotateTo animation — no drawing state needed here.
-/// </summary>
 public class WheelDrawable : IDrawable
 {
     private readonly (string Display, string Emoji, string SearchKey)[] _categories;
@@ -251,7 +204,7 @@ public class WheelDrawable : IDrawable
         {
             double startRad = -Math.PI / 2.0 + i * sweep;
 
-            // ── 1. Fill segment ───────────────────────────────────────────
+            // Fill segment
             var path = new PathF();
             path.MoveTo(cx, cy);
             const int steps = 36;
@@ -266,14 +219,14 @@ public class WheelDrawable : IDrawable
             canvas.FillColor = _colors[i % _colors.Length];
             canvas.FillPath(path);
 
-            // ── 2. Dividing line ──────────────────────────────────────────
-            canvas.StrokeColor = Colors.White;
-            canvas.StrokeSize = 2f;
+            // Dividing line
+            canvas.StrokeColor = Colors.White.WithAlpha(0.7f);
+            canvas.StrokeSize = 1.5f;
             canvas.DrawLine(cx, cy,
                 cx + (float)(radius * Math.Cos(startRad)),
                 cy + (float)(radius * Math.Sin(startRad)));
 
-            // ── 3. Emoji + label along segment midline ────────────────────
+            // Emoji + label
             double midDeg = -90.0 + i * sweepDeg + sweepDeg / 2.0;
             float labelR = radius * 0.60f;
 
@@ -281,7 +234,6 @@ public class WheelDrawable : IDrawable
             canvas.Translate(cx, cy);
             canvas.Rotate((float)(midDeg + 90));
 
-            // Emoji (large)
             canvas.FontSize = 20f;
             canvas.FontColor = Colors.White;
             canvas.DrawString(
@@ -291,7 +243,6 @@ public class WheelDrawable : IDrawable
                 HorizontalAlignment.Center,
                 VerticalAlignment.Center);
 
-            // Category name (small)
             canvas.FontSize = 8.5f;
             canvas.FontColor = Colors.White.WithAlpha(0.92f);
             canvas.DrawString(
@@ -304,9 +255,9 @@ public class WheelDrawable : IDrawable
             canvas.RestoreState();
         }
 
-        // ── 4. Outer border ring ──────────────────────────────────────────
-        canvas.StrokeColor = Colors.White;
-        canvas.StrokeSize = 4f;
+        // Outer border ring
+        canvas.StrokeColor = Colors.White.WithAlpha(0.6f);
+        canvas.StrokeSize = 3f;
         canvas.DrawEllipse(cx - radius, cy - radius, radius * 2f, radius * 2f);
     }
 }

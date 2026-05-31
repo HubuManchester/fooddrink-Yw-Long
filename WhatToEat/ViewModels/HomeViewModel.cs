@@ -10,21 +10,18 @@ namespace WhatToEat.ViewModels
     /// <summary>
     /// ViewModel for HomePage.
     /// Hardware features used:
-    ///   1. Text-to-Speech  — SpeakCommand reads selected meal aloud.
-    ///   2. Accelerometer / Shake — ShakeToSpin: shaking the device triggers the spin wheel.
-    ///      Uses MAUI's built-in Accelerometer API to detect shake gestures.
-    ///      Falls back gracefully if the accelerometer is not available.
+    ///   1. Text-to-Speech  — SpeakCommand reads selected meal aloud (toggle play/pause).
+    ///   2. Accelerometer / Shake — shaking the device triggers the spin wheel.
     /// </summary>
     public class HomeViewModel : INotifyPropertyChanged
     {
         private readonly MealService _mealService;
 
-        // ── Shake / Accelerometer ────────────────────────────────────────
-        // Threshold: total acceleration magnitude above this value triggers a shake.
-        // 2.5 G is a comfortable shake without being too sensitive.
         private const double ShakeThreshold = 2.5;
         private DateTime _lastShakeTime = DateTime.MinValue;
-        private const int ShakeCooldownMs = 2000; // prevent rapid re-triggering
+        private const int ShakeCooldownMs = 2000;
+
+        private CancellationTokenSource? _ttsCancellationTokenSource;
 
         public event EventHandler<int>? SpinRequested;
 
@@ -46,10 +43,14 @@ namespace WhatToEat.ViewModels
             RecommendedMeals = new ObservableCollection<Meal>();
 
             SpinCommand = new Command(async () => await SpinAsync());
+
             ConfirmCategoryCommand = new Command(
                 async () => await FetchRecommendationsAsync(),
                 () => HasSpunOnce && !IsBusy);
-            SpeakCommand = new Command(async () => await SpeakSelectedAsync());
+
+            // Toggle TTS play / pause on each tap
+            SpeakCommand = new Command(async () => await ToggleSpeakAsync());
+
             ConfirmSelectionCommand = new Command(
                 async () => await Shell.Current.GoToAsync($"//Discover?mealId={SelectedMeal?.Id}"),
                 () => HasSelectedMeal);
@@ -57,48 +58,31 @@ namespace WhatToEat.ViewModels
             SelectMealCommand = new Command<Meal>(meal =>
             {
                 if (meal == null) return;
-
-                // Deselect previous meal
-                if (_selectedMeal != null)
-                    _selectedMeal.IsSelected = false;
-
-                // Select new meal
+                if (_selectedMeal != null) _selectedMeal.IsSelected = false;
                 SelectedMeal = meal;
                 meal.IsSelected = true;
-
                 (ConfirmSelectionCommand as Command)?.ChangeCanExecute();
             });
 
-            // Start accelerometer when ViewModel is created
             StartAccelerometer();
         }
 
-        // ── Accelerometer / Shake detection ──────────────────────────────
+        // ── Accelerometer ─────────────────────────────────────────────────
 
-        /// <summary>
-        /// Starts the accelerometer sensor.
-        /// Catches FeatureNotSupportedException on platforms that lack the sensor
-        /// (e.g. Windows emulator), so the app still runs correctly.
-        /// Hardware feature: Accelerometer (Shake).
-        /// </summary>
         private void StartAccelerometer()
         {
             try
             {
                 if (!Accelerometer.Default.IsSupported)
                 {
-                    // Sensor not available (e.g. Windows desktop) — fail silently
                     ShakeHintText = "Shake not available on this device";
                     return;
                 }
-
-                if (Accelerometer.Default.IsMonitoring)
-                    return; // already running
+                if (Accelerometer.Default.IsMonitoring) return;
 
                 Accelerometer.Default.ReadingChanged += OnAccelerometerReadingChanged;
                 Accelerometer.Default.Start(SensorSpeed.Game);
-
-                ShakeHintText = "Shake your phone to spin the wheel!";
+                ShakeHintText = "Shake your phone to spin the wheel";
             }
             catch (FeatureNotSupportedException)
             {
@@ -111,20 +95,13 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        /// <summary>
-        /// Stops the accelerometer when the page is no longer visible
-        /// to save battery and avoid background processing.
-        /// Call this from the page's OnDisappearing.
-        /// </summary>
         public void StopAccelerometer()
         {
             try
             {
-                if (Accelerometer.Default.IsMonitoring)
-                {
-                    Accelerometer.Default.Stop();
-                    Accelerometer.Default.ReadingChanged -= OnAccelerometerReadingChanged;
-                }
+                if (!Accelerometer.Default.IsMonitoring) return;
+                Accelerometer.Default.Stop();
+                Accelerometer.Default.ReadingChanged -= OnAccelerometerReadingChanged;
             }
             catch (Exception ex)
             {
@@ -132,53 +109,25 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        /// <summary>
-        /// Called whenever the accelerometer reports a new reading.
-        /// Computes the magnitude of total acceleration and triggers SpinAsync
-        /// if it exceeds ShakeThreshold and the cooldown has elapsed.
-        /// </summary>
         private void OnAccelerometerReadingChanged(object? sender, AccelerometerChangedEventArgs e)
         {
             var data = e.Reading;
-
-            // Magnitude of the acceleration vector (gravity ≈ 1 G at rest)
             double magnitude = Math.Sqrt(
                 data.Acceleration.X * data.Acceleration.X +
                 data.Acceleration.Y * data.Acceleration.Y +
                 data.Acceleration.Z * data.Acceleration.Z);
 
-            // Check threshold and cooldown
             bool cooldownElapsed =
                 (DateTime.UtcNow - _lastShakeTime).TotalMilliseconds > ShakeCooldownMs;
 
             if (magnitude > ShakeThreshold && cooldownElapsed && !IsBusy)
             {
                 _lastShakeTime = DateTime.UtcNow;
-
-                // Accelerometer events fire on a background thread — marshal to UI thread
-                MainThread.BeginInvokeOnMainThread(async () =>
-                {
-                    await SpinAsync();
-                });
+                MainThread.BeginInvokeOnMainThread(async () => await SpinAsync());
             }
         }
 
-        // ── INotifyPropertyChanged ────────────────────────────────────────
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-        private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(name);
-            return true;
-        }
-
-        // ── Properties ───────────────────────────────────────────────────
+        // ── Properties ────────────────────────────────────────────────────
 
         private bool _isBusy;
         public bool IsBusy
@@ -203,17 +152,14 @@ namespace WhatToEat.ViewModels
             set => Set(ref _spinResultText, value);
         }
 
-        private string _statusInfo = "Spin the wheel to discover food!";
+        private string _statusInfo = "Spin the wheel to discover food";
         public string StatusInfo
         {
             get => _statusInfo;
             set => Set(ref _statusInfo, value);
         }
 
-        /// <summary>
-        /// Hint shown below the wheel. Updated based on accelerometer availability.
-        /// </summary>
-        private string _shakeHintText = "Shake your phone to spin the wheel!";
+        private string _shakeHintText = "Shake your phone to spin the wheel";
         public string ShakeHintText
         {
             get => _shakeHintText;
@@ -248,9 +194,26 @@ namespace WhatToEat.ViewModels
         }
         public bool HasSelectedMeal => _selectedMeal != null;
 
-        private int _currentCategoryIndex = 0;
+        // ── TTS play/pause state ──────────────────────────────────────────
 
-        // ── Commands ─────────────────────────────────────────────────────
+        /// <summary>True while TTS is actively speaking.</summary>
+        private bool _isSpeaking;
+        public bool IsSpeaking
+        {
+            get => _isSpeaking;
+            set
+            {
+                Set(ref _isSpeaking, value);
+                OnPropertyChanged(nameof(SpeakButtonText));
+            }
+        }
+
+        /// <summary>Button label toggles between Play and Pause.</summary>
+        public string SpeakButtonText => _isSpeaking ? "Pause" : "Read Aloud";
+
+        private int _currentCategoryIndex;
+
+        // ── Commands ──────────────────────────────────────────────────────
 
         public ICommand SpinCommand { get; }
         public ICommand ConfirmCategoryCommand { get; }
@@ -258,7 +221,7 @@ namespace WhatToEat.ViewModels
         public ICommand ConfirmSelectionCommand { get; }
         public ICommand SelectMealCommand { get; }
 
-        // ── Spin ─────────────────────────────────────────────────────────
+        // ── Spin ──────────────────────────────────────────────────────────
 
         private async Task SpinAsync()
         {
@@ -271,10 +234,8 @@ namespace WhatToEat.ViewModels
 
             await Task.Delay(2300);
 
-            var winner = Categories[_currentCategoryIndex];
-            SpinResultText = winner.Display;
+            SpinResultText = Categories[_currentCategoryIndex].Display;
             HasSpunOnce = true;
-
             (ConfirmCategoryCommand as Command)?.ChangeCanExecute();
         }
 
@@ -282,11 +243,7 @@ namespace WhatToEat.ViewModels
 
         private async Task FetchRecommendationsAsync()
         {
-            if (!HasSpunOnce)
-            {
-                ErrorMessage = "Please spin the wheel first!";
-                return;
-            }
+            if (!HasSpunOnce) { ErrorMessage = "Please spin the wheel first!"; return; }
 
             IsBusy = true;
             ErrorMessage = string.Empty;
@@ -297,7 +254,6 @@ namespace WhatToEat.ViewModels
                 StatusInfo = $"Finding {category.Display} dishes for you...";
 
                 var meals = await _mealService.SearchMealsByNameAsync(category.SearchKey);
-
                 if (meals.Count == 0)
                 {
                     var random = await _mealService.GetRandomMealAsync();
@@ -316,7 +272,6 @@ namespace WhatToEat.ViewModels
 
                 HasRecommendations = true;
 
-                // Auto-select first meal
                 var firstMeal = RecommendedMeals.First();
                 firstMeal.IsSelected = true;
                 SelectedMeal = firstMeal;
@@ -340,31 +295,95 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        // ── TTS — Hardware feature ────────────────────────────────────────
+        // ── TTS toggle play / pause ───────────────────────────────────────
 
-        private async Task SpeakSelectedAsync()
+        /// <summary>
+        /// First tap  → speaks the selected meal name.
+        /// Second tap → cancels speech immediately.
+        /// Hardware feature: Text-to-Speech.
+        /// </summary>
+        private async Task ToggleSpeakAsync()
         {
+            if (_isSpeaking)
+            {
+                CancelSpeaking();
+                return;
+            }
+
             if (SelectedMeal == null)
             {
                 ErrorMessage = "Please select a meal first!";
                 return;
             }
 
+            await StartSpeakingAsync();
+        }
+
+        /// <summary>
+        /// </summary>
+        private async Task StartSpeakingAsync()
+        {
+            if (SelectedMeal == null) return;
+
+            CancelSpeaking();
+
+            _ttsCancellationTokenSource = new CancellationTokenSource();
+
             try
             {
-                var text = $"We recommend {SelectedMeal.StrMeal}. " +
-                           $"{SelectedMeal.StrArea}.";
+                IsSpeaking = true;
 
-                await TextToSpeech.Default.SpeakAsync(text, new SpeechOptions
-                {
-                    Pitch = 1.0f,
-                    Volume = 1.0f
-                });
+                var text = $"We recommend {SelectedMeal.StrMeal}. {SelectedMeal.StrArea}.";
+
+                await TextToSpeech.Default.SpeakAsync(
+                    text,
+                    new SpeechOptions
+                    {
+                        Pitch = 1.0f,
+                        Volume = 1.0f
+                    },
+                    cancelToken: _ttsCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("[HomeViewModel] Speech was cancelled by user.");
             }
             catch (Exception ex)
             {
                 ErrorMessage = $"Speech error: {ex.Message}";
+                Console.WriteLine($"[HomeViewModel] Speech error: {ex}");
             }
+            finally
+            {
+                IsSpeaking = false;
+                _ttsCancellationTokenSource?.Dispose();
+                _ttsCancellationTokenSource = null;
+            }
+        }
+
+        /// <summary>
+        /// </summary>
+        private void CancelSpeaking()
+        {
+            if (_ttsCancellationTokenSource != null && !_ttsCancellationTokenSource.IsCancellationRequested)
+            {
+                _ttsCancellationTokenSource.Cancel();
+            }
+        }
+
+        // ── INotifyPropertyChanged ────────────────────────────────────────
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            field = value;
+            OnPropertyChanged(name);
+            return true;
         }
     }
 }
