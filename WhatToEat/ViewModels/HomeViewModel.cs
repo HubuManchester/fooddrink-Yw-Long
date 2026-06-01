@@ -7,12 +7,6 @@ using WhatToEat.Services;
 
 namespace WhatToEat.ViewModels
 {
-    /// <summary>
-    /// ViewModel for HomePage.
-    /// Hardware features used:
-    ///   1. Text-to-Speech  — SpeakCommand reads selected meal aloud (toggle play/pause).
-    ///   2. Accelerometer / Shake — shaking the device triggers the spin wheel.
-    /// </summary>
     public class HomeViewModel : INotifyPropertyChanged
     {
         private readonly MealService _mealService;
@@ -48,7 +42,8 @@ namespace WhatToEat.ViewModels
                 async () => await FetchRecommendationsAsync(),
                 () => HasSpunOnce && !IsBusy);
 
-            // Toggle TTS play / pause on each tap
+            RefreshCommand = new Command(async () => await ResetAsync());
+
             SpeakCommand = new Command(async () => await ToggleSpeakAsync());
 
             ConfirmSelectionCommand = new Command(
@@ -137,6 +132,13 @@ namespace WhatToEat.ViewModels
         }
         public bool IsNotBusy => !_isBusy;
 
+        private bool _isRefreshing;
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set => Set(ref _isRefreshing, value);
+        }
+
         private string _errorMessage = string.Empty;
         public string ErrorMessage
         {
@@ -194,21 +196,12 @@ namespace WhatToEat.ViewModels
         }
         public bool HasSelectedMeal => _selectedMeal != null;
 
-        // ── TTS play/pause state ──────────────────────────────────────────
-
-        /// <summary>True while TTS is actively speaking.</summary>
         private bool _isSpeaking;
         public bool IsSpeaking
         {
             get => _isSpeaking;
-            set
-            {
-                Set(ref _isSpeaking, value);
-                OnPropertyChanged(nameof(SpeakButtonText));
-            }
+            set { Set(ref _isSpeaking, value); OnPropertyChanged(nameof(SpeakButtonText)); }
         }
-
-        /// <summary>Button label toggles between Play and Pause.</summary>
         public string SpeakButtonText => _isSpeaking ? "Pause" : "Read Aloud";
 
         private int _currentCategoryIndex;
@@ -217,6 +210,7 @@ namespace WhatToEat.ViewModels
 
         public ICommand SpinCommand { get; }
         public ICommand ConfirmCategoryCommand { get; }
+        public ICommand RefreshCommand { get; }
         public ICommand SpeakCommand { get; }
         public ICommand ConfirmSelectionCommand { get; }
         public ICommand SelectMealCommand { get; }
@@ -239,11 +233,35 @@ namespace WhatToEat.ViewModels
             (ConfirmCategoryCommand as Command)?.ChangeCanExecute();
         }
 
+        // ── Reset─────────────────────────────
+
+        private Task ResetAsync()
+        {
+            CancelSpeaking();
+
+            if (_selectedMeal != null) _selectedMeal.IsSelected = false;
+            SelectedMeal = null;
+            RecommendedMeals.Clear();
+
+            HasSpunOnce = false;
+            HasRecommendations = false;
+            ErrorMessage = string.Empty;
+            SpinResultText = "Spin the wheel to start";
+            StatusInfo = "Spin the wheel to discover food";
+
+            (ConfirmCategoryCommand as Command)?.ChangeCanExecute();
+            (ConfirmSelectionCommand as Command)?.ChangeCanExecute();
+
+            IsRefreshing = false;
+
+            return Task.CompletedTask;
+        }
+
         // ── Fetch recommendations ─────────────────────────────────────────
 
         private async Task FetchRecommendationsAsync()
         {
-            if (!HasSpunOnce) { ErrorMessage = "Please spin the wheel first!"; return; }
+            if (!HasSpunOnce) return;
 
             IsBusy = true;
             ErrorMessage = string.Empty;
@@ -297,18 +315,9 @@ namespace WhatToEat.ViewModels
 
         // ── TTS toggle play / pause ───────────────────────────────────────
 
-        /// <summary>
-        /// First tap  → speaks the selected meal name.
-        /// Second tap → cancels speech immediately.
-        /// Hardware feature: Text-to-Speech.
-        /// </summary>
         private async Task ToggleSpeakAsync()
         {
-            if (_isSpeaking)
-            {
-                CancelSpeaking();
-                return;
-            }
+            if (_isSpeaking) { CancelSpeaking(); return; }
 
             if (SelectedMeal == null)
             {
@@ -319,29 +328,20 @@ namespace WhatToEat.ViewModels
             await StartSpeakingAsync();
         }
 
-        /// <summary>
-        /// </summary>
         private async Task StartSpeakingAsync()
         {
             if (SelectedMeal == null) return;
 
             CancelSpeaking();
-
             _ttsCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
                 IsSpeaking = true;
-
                 var text = $"We recommend {SelectedMeal.StrMeal}. {SelectedMeal.StrArea}.";
-
                 await TextToSpeech.Default.SpeakAsync(
                     text,
-                    new SpeechOptions
-                    {
-                        Pitch = 1.0f,
-                        Volume = 1.0f
-                    },
+                    new SpeechOptions { Pitch = 1.0f, Volume = 1.0f },
                     cancelToken: _ttsCancellationTokenSource.Token);
             }
             catch (OperationCanceledException)
@@ -361,14 +361,11 @@ namespace WhatToEat.ViewModels
             }
         }
 
-        /// <summary>
-        /// </summary>
         private void CancelSpeaking()
         {
-            if (_ttsCancellationTokenSource != null && !_ttsCancellationTokenSource.IsCancellationRequested)
-            {
+            if (_ttsCancellationTokenSource != null &&
+                !_ttsCancellationTokenSource.IsCancellationRequested)
                 _ttsCancellationTokenSource.Cancel();
-            }
         }
 
         // ── INotifyPropertyChanged ────────────────────────────────────────

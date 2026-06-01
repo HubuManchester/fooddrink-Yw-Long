@@ -177,12 +177,10 @@ namespace WhatToEat.Services
         {
             try
             {
-                // 解码
                 var options = new BitmapFactory.Options { InJustDecodeBounds = false };
                 var bitmap  = BitmapFactory.DecodeByteArray(input, 0, input.Length, options);
                 if (bitmap == null) return input;
 
-                // 如果尺寸太大，先按比例缩小
                 int maxDim = 1024;
                 if (bitmap.Width > maxDim || bitmap.Height > maxDim)
                 {
@@ -194,7 +192,6 @@ namespace WhatToEat.Services
                     bitmap = scaled;
                 }
 
-                // 从质量 85 开始往下压，直到低于 900KB
                 int[] qualities = { 85, 70, 55, 40, 25 };
                 foreach (var q in qualities)
                 {
@@ -209,7 +206,6 @@ namespace WhatToEat.Services
                     }
                 }
 
-                // 最终兜底：缩到 640px + 质量 20
                 float s2   = 640f / Math.Max(bitmap.Width, bitmap.Height);
                 var   bmp2 = Android.Graphics.Bitmap.CreateScaledBitmap(
                     bitmap, (int)(bitmap.Width * s2), (int)(bitmap.Height * s2), true);

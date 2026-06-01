@@ -8,279 +8,266 @@
     Title="What To Eat?"
     BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
 
-    <ScrollView BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
-                VerticalOptions="FillAndExpand">
-        <VerticalStackLayout Spacing="0"
-                             BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}">
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding RefreshCommand}"
+                 RefreshColor="#E07B39">
 
-            <!-- ========== HEADER ========== 
-                 Two-tone title: regular + bold accent. Subtle spacing refined. -->
-            <VerticalStackLayout Padding="24,28,24,6" Spacing="4">
-                <Label FontSize="{DynamicResource FontDisplay}"
-                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
-                       SemanticProperties.HeadingLevel="Level1"
-                       SemanticProperties.Description="What To Eat — food discovery app">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="What To " FontAttributes="None"/>
-                            <Span Text="Eat?" FontAttributes="Bold"
-                                  TextColor="#E07B39"/>
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
-                <!-- Sub-label with subtle opacity for softer appearance -->
-                <Label Text="{Binding StatusInfo}"
-                       FontSize="{DynamicResource FontSmall}"
-                       Opacity="0.75"
-                       TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
-                       SemanticProperties.Description="Current status"/>
-            </VerticalStackLayout>
+        <ScrollView BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                    VerticalOptions="FillAndExpand">
+            <VerticalStackLayout Spacing="0">
 
-            <!-- ========== WHEEL SECTION ========== -->
-            <VerticalStackLayout Padding="0,12,0,8"
-                                 HorizontalOptions="Center"
-                                 Spacing="18">
+                <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+                <VerticalStackLayout Padding="24,28,24,6" Spacing="4">
+                    <Label FontSize="{DynamicResource FontDisplay}"
+                           TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                           SemanticProperties.HeadingLevel="Level1"
+                           SemanticProperties.Description="What To Eat, food discovery app">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="What To "/>
+                                <Span Text="Eat?" FontAttributes="Bold" TextColor="#E07B39"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    <Label Text="{Binding StatusInfo}"
+                           FontSize="{DynamicResource FontSmall}"
+                           Opacity="0.7"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"/>
+                </VerticalStackLayout>
 
-                <Grid WidthRequest="264" HeightRequest="264"
-                      HorizontalOptions="Center">
+                <!-- ══ WHEEL ════════════════════════════════════════════════════ -->
+                <VerticalStackLayout Padding="0,12,0,8"
+                                     HorizontalOptions="Center"
+                                     Spacing="18">
 
-                    <!-- Outer soft shadow ring (mild gradient-like feel) -->
-                    <Ellipse WidthRequest="264" HeightRequest="264"
-                             HorizontalOptions="Center" VerticalOptions="Center">
-                        <Ellipse.Fill>
-                            <SolidColorBrush Color="{AppThemeBinding Light=#E8D0B8, Dark=#2A1808}"/>
-                        </Ellipse.Fill>
-                    </Ellipse>
+                    <Grid WidthRequest="264" HeightRequest="264"
+                          HorizontalOptions="Center">
 
-                    <GraphicsView x:Name="WheelCanvas"
-                                  WidthRequest="248" HeightRequest="248"
-                                  BackgroundColor="Transparent"
-                                  HorizontalOptions="Center"
-                                  VerticalOptions="Center"
-                                  SemanticProperties.Description="Food category spin wheel"/>
+                        <Ellipse WidthRequest="264" HeightRequest="264"
+                                 HorizontalOptions="Center" VerticalOptions="Center">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{AppThemeBinding Light=#E8D0B8, Dark=#2A1808}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
 
-                    <!-- Centre hub with subtle inner shadow effect -->
-                    <Ellipse WidthRequest="56" HeightRequest="56"
-                             Fill="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
-                             Stroke="#E07B39" StrokeThickness="2.5"
-                             HorizontalOptions="Center" VerticalOptions="Center"
-                             ZIndex="10"/>
-                    <!-- Fork/knife symbol instead of star for food context -->
-                    <Label Text="🍴" FontSize="{DynamicResource FontMedium}"
-                           FontAttributes="Bold" TextColor="#E07B39"
-                           HorizontalOptions="Center" VerticalOptions="Center"
-                           ZIndex="11"/>
+                        <GraphicsView x:Name="WheelCanvas"
+                                      WidthRequest="248" HeightRequest="248"
+                                      BackgroundColor="Transparent"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center"
+                                      SemanticProperties.Description="Food category spin wheel"/>
 
-                    <!-- Refined pointer triangle with rounded top -->
-                    <Polygon Points="0,0 14,0 7,12" Fill="#C4773B"
-                             HorizontalOptions="Center" VerticalOptions="Start"
-                             ZIndex="12"/>
-                </Grid>
+                        <Ellipse WidthRequest="56" HeightRequest="56"
+                                 Fill="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                                 Stroke="#E07B39" StrokeThickness="2.5"
+                                 HorizontalOptions="Center" VerticalOptions="Center"
+                                 ZIndex="10"/>
+                        <Label Text="✦" FontSize="{DynamicResource FontMedium}"
+                               FontAttributes="Bold" TextColor="#E07B39"
+                               HorizontalOptions="Center" VerticalOptions="Center"
+                               ZIndex="11"/>
+                        <Polygon Points="0,0 14,0 7,12" Fill="#C4773B"
+                                 HorizontalOptions="Center" VerticalOptions="Start"
+                                 ZIndex="12"/>
+                    </Grid>
 
-                <!-- Result chip with subtle elevation shadow -->
-                <Frame x:Name="ResultFrame"
-                       BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
-                       BorderColor="#E07B39" CornerRadius="24"
-                       Padding="28,10" HasShadow="True"
-                       HorizontalOptions="Center">
-                    <Label Text="{Binding SpinResultText}"
-                           FontSize="{DynamicResource FontBody}"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
-                           HorizontalOptions="Center"
-                           SemanticProperties.Description="Spin result"/>
-                </Frame>
-
-            </VerticalStackLayout>
-
-            <!-- ========== ACTION BUTTONS ========== 
-                 Spin + Pick This - refined pill buttons with better spacing -->
-            <Grid Padding="24,8,24,20"
-                  ColumnDefinitions="*,*" ColumnSpacing="14">
-
-                <!-- Spin button with subtle shadow -->
-                <Frame Grid.Column="0" Padding="0" CornerRadius="28"
-                       HasShadow="True"
-                       BackgroundColor="#E07B39">
-                    <Button Text="SPIN"
-                            FontSize="{DynamicResource FontBody}"
-                            FontAttributes="Bold"
-                            BackgroundColor="Transparent"
-                            TextColor="White"
-                            CornerRadius="28"
-                            HeightRequest="54"
-                            BorderWidth="0"
-                            Command="{Binding SpinCommand}"
-                            IsEnabled="{Binding IsNotBusy}"
-                            SemanticProperties.Hint="Spin the wheel for a random food category"/>
-                </Frame>
-
-                <!-- Pick This: outlined with thicker border for emphasis -->
-                <Frame Grid.Column="1" Padding="0" CornerRadius="28"
-                       HasShadow="False"
-                       BackgroundColor="Transparent"
-                       BorderColor="#E07B39"
-                       IsVisible="{Binding HasSpunOnce}">
-                    <Button Text="PICK THIS"
-                            FontSize="{DynamicResource FontBody}"
-                            FontAttributes="Bold"
-                            BackgroundColor="Transparent"
-                            TextColor="#E07B39"
-                            CornerRadius="28"
-                            HeightRequest="54"
-                            BorderWidth="0"
-                            Command="{Binding ConfirmCategoryCommand}"
-                            SemanticProperties.Hint="Confirm this food category and get recommendations"/>
-                </Frame>
-            </Grid>
-
-            <!-- ========== ERROR MESSAGE ========== -->
-            <Frame IsVisible="{Binding HasError}"
-                   BackgroundColor="{AppThemeBinding Light=#FFF0F0, Dark=#2A1010}"
-                   BorderColor="#E24B4A" CornerRadius="14"
-                   Padding="14,12" Margin="24,4,24,8" HasShadow="False">
-                <Label Text="{Binding ErrorMessage}"
-                       TextColor="#E24B4A"
-                       FontSize="{DynamicResource FontSmall}"
-                       SemanticProperties.Description="Error message"/>
-            </Frame>
-
-            <!-- ========== LOADING INDICATOR ========== -->
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                               IsVisible="{Binding IsBusy}"
-                               Color="#E07B39" HeightRequest="44"
-                               SemanticProperties.Description="Loading recommendations"/>
-
-            <!-- ========== RECOMMENDATIONS SECTION ========== -->
-            <VerticalStackLayout IsVisible="{Binding HasRecommendations}" Spacing="16">
-
-                <!-- Section divider with nicer typography -->
-                <Grid Padding="24,8,24,0"
-                      ColumnDefinitions="*,Auto,*" ColumnSpacing="12">
-                    <BoxView Grid.Column="0" HeightRequest="1"
-                             Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
-                             VerticalOptions="Center"/>
-                    <Label Grid.Column="1" Text="RECOMMENDED FOR YOU"
-                           FontSize="{DynamicResource FontMicro}"
-                           FontAttributes="Bold" CharacterSpacing="1.2"
-                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
-                           VerticalOptions="Center"/>
-                    <BoxView Grid.Column="2" HeightRequest="1"
-                             Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
-                             VerticalOptions="Center"/>
-                </Grid>
-
-                <!-- Instruction hint with smaller font -->
-                <Label Text="Tap a card to select"
-                       FontSize="{DynamicResource FontMicro}"
-                       Opacity="0.7"
-                       TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
-                       HorizontalOptions="Center"/>
-
-                <!-- Meal cards: cleaner layout, no stroke issues -->
-                <CollectionView x:Name="MealCards"
-                                ItemsSource="{Binding RecommendedMeals}"
-                                SelectionMode="None"
-                                HeightRequest="218"
-                                Margin="24,0"
-                                BackgroundColor="Transparent"
-                                SemanticProperties.Description="Swipe to browse meal recommendations">
-
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal"
-                                           ItemSpacing="14"
-                                           SnapPointsType="None"/>
-                    </CollectionView.ItemsLayout>
-
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:Meal">
-                            <Grid WidthRequest="152" Padding="0" Margin="0,0,0,4">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectMealCommand}"
-                                        CommandParameter="{Binding .}"/>
-                                </Grid.GestureRecognizers>
-
-                                <!-- Card border with smooth animation on selection -->
-                                <Border StrokeShape="RoundRectangle 16"
-                                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C1A0E}"
-                                        Stroke="Transparent"
-                                        StrokeThickness="2.5">
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border"
-                                                     Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="Stroke" Value="#E07B39"/>
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFF5EE, Dark=#3A2010}"/>
-                                        </DataTrigger>
-                                    </Border.Triggers>
-
-                                    <VerticalStackLayout Spacing="0">
-                                        <!-- Image section with subtle bottom border -->
-                                        <Border StrokeShape="RoundRectangle 16,16,0,0"
-                                                Stroke="Transparent" StrokeThickness="0">
-                                            <Image Source="{Binding StrMealThumb}"
-                                                   HeightRequest="110" Aspect="AspectFill"
-                                                   SemanticProperties.Description="Meal photo"/>
-                                        </Border>
-                                        <VerticalStackLayout Padding="10,10,10,12" Spacing="4">
-                                            <Label Text="{Binding StrMeal}"
-                                                   FontSize="{DynamicResource FontSmall}"
-                                                   FontAttributes="Bold"
-                                                   TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
-                                                   LineBreakMode="TailTruncation" MaxLines="2"/>
-                                            <Label Text="{Binding StrArea}"
-                                                   FontSize="{DynamicResource FontTiny}"
-                                                   FontAttributes="None"
-                                                   TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"/>
-                                        </VerticalStackLayout>
-                                    </VerticalStackLayout>
-                                </Border>
-                            </Grid>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <!-- Action buttons for selected meal -->
-                <Grid Padding="24,4,24,12"
-                      ColumnDefinitions="*,*" ColumnSpacing="14">
-
-                    <!-- Read Aloud / Pause: outlined with uppercase text -->
-                    <Frame Grid.Column="0" Padding="0" CornerRadius="26"
-                           HasShadow="False" BackgroundColor="Transparent"
-                           BorderColor="{AppThemeBinding Light=#E07B39, Dark=#C4773B}">
-                        <Button Text="{Binding SpeakButtonText}"
-                                FontSize="{DynamicResource FontSmall}"
-                                FontAttributes="Bold"
-                                BackgroundColor="Transparent"
-                                TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"
-                                CornerRadius="26" HeightRequest="48"
-                                BorderWidth="0"
-                                Command="{Binding SpeakCommand}"
-                                SemanticProperties.Hint="Read or pause the selected meal name"/>
+                    <Frame x:Name="ResultFrame"
+                           BackgroundColor="{AppThemeBinding Light=#FFFFFFCC, Dark=#2C1A0ECC}"
+                           BorderColor="{AppThemeBinding Light=#FFFFFF80, Dark=#FFFFFF30}"
+                           CornerRadius="24" Padding="32,10"
+                           HasShadow="True"
+                           HorizontalOptions="Center">
+                        <Label Text="{Binding SpinResultText}"
+                               FontSize="{DynamicResource FontBody}"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#C4773B, Dark=#F4A460}"
+                               HorizontalOptions="Center"
+                               SemanticProperties.Description="Spin result"/>
                     </Frame>
 
-                    <!-- View Recipe: filled with soft shadow -->
-                    <Frame Grid.Column="1" Padding="0" CornerRadius="26"
-                           HasShadow="True" BackgroundColor="#E07B39"
-                           IsVisible="{Binding HasSelectedMeal}">
-                        <Button Text="VIEW RECIPE"
-                                FontSize="{DynamicResource FontSmall}"
+                </VerticalStackLayout>
+
+                <!-- ══ SPIN + PICK BUTTONS ══════════════════════════════════════ -->
+                <Grid Padding="24,8,24,20"
+                      ColumnDefinitions="*,*" ColumnSpacing="14">
+
+                    <Frame Grid.Column="0" Padding="0" CornerRadius="28"
+                           HasShadow="True"
+                           BackgroundColor="#E07B39"
+                           BorderColor="#F4A46040">
+                        <Button Text="SPIN"
+                                FontSize="{DynamicResource FontBody}"
                                 FontAttributes="Bold"
                                 BackgroundColor="Transparent"
                                 TextColor="White"
-                                CornerRadius="26" HeightRequest="48"
+                                CornerRadius="28" HeightRequest="54"
                                 BorderWidth="0"
-                                Command="{Binding ConfirmSelectionCommand}"
-                                SemanticProperties.Hint="View full recipe details"/>
+                                Command="{Binding SpinCommand}"
+                                IsEnabled="{Binding IsNotBusy}"
+                                SemanticProperties.Hint="Spin the wheel for a random food category"/>
+                    </Frame>
+
+                    <Frame Grid.Column="1" Padding="0" CornerRadius="28"
+                           HasShadow="False"
+                           BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                           BorderColor="#E07B39"
+                           IsVisible="{Binding HasSpunOnce}">
+                        <Button Text="PICK THIS"
+                                FontSize="{DynamicResource FontBody}"
+                                FontAttributes="Bold"
+                                BackgroundColor="Transparent"
+                                TextColor="#E07B39"
+                                CornerRadius="28" HeightRequest="54"
+                                BorderWidth="0"
+                                Command="{Binding ConfirmCategoryCommand}"
+                                SemanticProperties.Hint="Confirm this food category"/>
                     </Frame>
                 </Grid>
 
+                <!-- ══ ERROR ════════════════════════════════════════════════════ -->
+                <Frame IsVisible="{Binding HasError}"
+                       BackgroundColor="{AppThemeBinding Light=#FFF0F0CC, Dark=#2A1010CC}"
+                       BorderColor="#E24B4A60"
+                       CornerRadius="16" Padding="14,12"
+                       Margin="24,0,24,8" HasShadow="False">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="#E24B4A"
+                           FontSize="{DynamicResource FontSmall}"/>
+                </Frame>
+
+                <!-- ══ LOADING ══════════════════════════════════════════════════ -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="#E07B39" HeightRequest="44"/>
+
+                <!-- ══ RECOMMENDATIONS ══════════════════════════════════════════ -->
+                <VerticalStackLayout IsVisible="{Binding HasRecommendations}" Spacing="14">
+
+                    <Grid Padding="24,8,24,0"
+                          ColumnDefinitions="*,Auto,*" ColumnSpacing="12">
+                        <BoxView Grid.Column="0" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="PICKS FOR YOU"
+                               FontSize="{DynamicResource FontTiny}"
+                               FontAttributes="Bold" CharacterSpacing="1.2"
+                               TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                               VerticalOptions="Center"/>
+                        <BoxView Grid.Column="2" HeightRequest="1"
+                                 Color="{AppThemeBinding Light=#E8D5C0, Dark=#3A2010}"
+                                 VerticalOptions="Center"/>
+                    </Grid>
+
+                    <Label Text="Tap a card to select"
+                           FontSize="{DynamicResource FontTiny}"
+                           Opacity="0.65"
+                           TextColor="{AppThemeBinding Light=#C4A882, Dark=#7A6050}"
+                           HorizontalOptions="Center"/>
+
+                    <CollectionView x:Name="MealCards"
+                                    ItemsSource="{Binding RecommendedMeals}"
+                                    SelectionMode="None"
+                                    HeightRequest="220"
+                                    Margin="24,0"
+                                    BackgroundColor="Transparent"
+                                    SemanticProperties.Description="Browse meal recommendations">
+
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal"
+                                               ItemSpacing="14"
+                                               SnapPointsType="None"/>
+                        </CollectionView.ItemsLayout>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Meal">
+                                <Grid WidthRequest="152" Margin="0,2,0,6">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectMealCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    </Grid.GestureRecognizers>
+
+                                    <Border StrokeShape="RoundRectangle 20"
+                                            BackgroundColor="{AppThemeBinding Light=#FFFFFFD9, Dark=#2C1A0ED9}"
+                                            Stroke="{AppThemeBinding Light=#FFFFFF99, Dark=#FFFFFF20}"
+                                            StrokeThickness="1.5">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border"
+                                                         Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="Stroke" Value="#E07B39"/>
+                                                <Setter Property="StrokeThickness" Value="2.5"/>
+                                                <Setter Property="BackgroundColor"
+                                                        Value="{AppThemeBinding Light=#FFF0E6, Dark=#3A2010}"/>
+                                            </DataTrigger>
+                                        </Border.Triggers>
+
+                                        <VerticalStackLayout Spacing="0">
+                                            <Border StrokeShape="RoundRectangle 20,20,0,0"
+                                                    Stroke="Transparent" StrokeThickness="0">
+                                                <Image Source="{Binding StrMealThumb}"
+                                                       HeightRequest="110" Aspect="AspectFill"
+                                                       SemanticProperties.Description="Meal photo"/>
+                                            </Border>
+                                            <VerticalStackLayout Padding="10,10,10,12" Spacing="4">
+                                                <Label Text="{Binding StrMeal}"
+                                                       FontSize="{DynamicResource FontSmall}"
+                                                       FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light=#2C1A0E, Dark=#F5E6D3}"
+                                                       LineBreakMode="TailTruncation" MaxLines="2"/>
+                                                <Label Text="{Binding StrArea}"
+                                                       FontSize="{DynamicResource FontTiny}"
+                                                       TextColor="{AppThemeBinding Light=#C4773B, Dark=#E8903C}"/>
+                                            </VerticalStackLayout>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Read Aloud + View Recipe -->
+                    <Grid Padding="24,0,24,12"
+                          ColumnDefinitions="*,*" ColumnSpacing="14">
+
+                        <Frame Grid.Column="0" Padding="0" CornerRadius="26"
+                               HasShadow="False"
+                               BackgroundColor="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"
+                               BorderColor="#E07B39">
+                            <Button Text="{Binding SpeakButtonText}"
+                                    FontSize="{DynamicResource FontSmall}"
+                                    FontAttributes="Bold"
+                                    BackgroundColor="Transparent"
+                                    TextColor="#E07B39"
+                                    CornerRadius="26" HeightRequest="50"
+                                    BorderWidth="0"
+                                    Command="{Binding SpeakCommand}"
+                                    SemanticProperties.Hint="Read or pause the selected meal name"/>
+                        </Frame>
+
+                        <Frame Grid.Column="1" Padding="0" CornerRadius="26"
+                               HasShadow="True"
+                               BackgroundColor="#E07B39"
+                               BorderColor="#F4A46050"
+                               IsVisible="{Binding HasSelectedMeal}">
+                            <Button Text="VIEW RECIPE"
+                                    FontSize="{DynamicResource FontSmall}"
+                                    FontAttributes="Bold"
+                                    BackgroundColor="Transparent"
+                                    TextColor="White"
+                                    CornerRadius="26" HeightRequest="50"
+                                    BorderWidth="0"
+                                    Command="{Binding ConfirmSelectionCommand}"
+                                    SemanticProperties.Hint="View full recipe details"/>
+                        </Frame>
+                    </Grid>
+
+                </VerticalStackLayout>
+
+                <BoxView HeightRequest="30"
+                         Color="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"/>
+
             </VerticalStackLayout>
+        </ScrollView>
 
-            <!-- Bottom spacer -->
-            <BoxView HeightRequest="30"
-                     Color="{AppThemeBinding Light=#FFF8F0, Dark=#1A0F08}"/>
-
-        </VerticalStackLayout>
-    </ScrollView>
+    </RefreshView>
 </ContentPage>
