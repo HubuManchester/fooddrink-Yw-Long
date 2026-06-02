@@ -77,6 +77,7 @@ namespace WhatToEat.ViewModels
 
                 Accelerometer.Default.ReadingChanged += OnAccelerometerReadingChanged;
                 Accelerometer.Default.Start(SensorSpeed.Game);
+
                 ShakeHintText = "Shake your phone to spin the wheel";
             }
             catch (FeatureNotSupportedException)

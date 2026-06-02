@@ -234,7 +234,6 @@ namespace WhatToEat.ViewModels
             }
             catch
             {
-                // Haptic not supported on this device — ignore silently.
             }
         }
         #endregion

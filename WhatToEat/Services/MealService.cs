@@ -34,17 +34,14 @@ namespace WhatToEat.Services
         {
             try
             {
-                // 1. 读取原始字节
                 using var ms = new MemoryStream();
                 await imageStream.CopyToAsync(ms);
                 var originalBytes = ms.ToArray();
                 Console.WriteLine($"[LogMeal] Original size: {originalBytes.Length} bytes");
 
-                // 2. 压缩到 900KB 以内
                 var compressed = CompressImage(originalBytes);
                 Console.WriteLine($"[LogMeal] Compressed size: {compressed.Length} bytes");
 
-                // 3. 上传
                 using var content = new MultipartFormDataContent();
                 var imageContent = new ByteArrayContent(compressed);
                 imageContent.Headers.ContentType =
@@ -69,7 +66,6 @@ namespace WhatToEat.Services
                 if (!resp1.IsSuccessStatusCode)
                     return null;
 
-                // 4. 解析识别结果
                 long imageId = 0;
                 string foodName = string.Empty;
                 double probability = 0;

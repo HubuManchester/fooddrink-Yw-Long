@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<InfoWarnings>
+  <Info>Begin full analysis with NDepend v2026.1.5 on 01 Jun 2026 16:39:33. Runtime .NET Framework 4.8.9325.0</Info>
+  <Info>Visual Studio solution file resolved to absolute file path: from    {.\WhatToEat.sln}    to    {C:\Users\27336\Desktop\WhatToEat\WhatToEat.sln}</Info>
+  <Info>Output directory resolved to absolute directory path: C:\Users\27336\Desktop\WhatToEat\NDependOut</Info>
+  <Info>.NET Assembly resolved from the Visual Studio solution file {C:\Users\27336\Desktop\WhatToEat\WhatToEat.sln}
+   C:\Users\27336\Desktop\WhatToEat\WhatToEat\bin\Debug\net8.0-android\WhatToEat.dll</Info>
+  <Info>No .NET Assembly filtered out from the Visual Studio solution file {C:\Users\27336\Desktop\WhatToEat\WhatToEat.sln}.</Info>
+  <Info>Concurrent mode</Info>
+  <Info>.NET Assemblies loaded from {C:\Users\27336\.nuget\packages} 
+   .\CommunityToolkit.Maui.Core\7.0.0\lib\net8.0\CommunityToolkit.Maui.Core.dll   v1.0.0.0
+   .\CommunityToolkit.Maui\14.1.1\lib\net10.0\CommunityToolkit.Maui.dll   v14.1.1.0
+   .\Microsoft.Extensions.Logging.Abstractions\10.0.0\lib\net10.0\Microsoft.Extensions.Logging.Abstractions.dll   v10.0.0.0
+   .\Microsoft.Extensions.Logging.Debug\10.0.0\lib\net10.0\Microsoft.Extensions.Logging.Debug.dll   v10.0.0.0
+   .\Microsoft.Maui.Controls.Xaml\8.0.100\lib\net8.0\Microsoft.Maui.Controls.Xaml.dll   v1.0.0.0
+   .\Microsoft.Maui.Essentials\8.0.100\lib\net7.0\Microsoft.Maui.Essentials.dll   v1.0.0.0
+   .\Microsoft.Maui.Graphics\8.0.100\lib\net7.0\Microsoft.Maui.Graphics.dll   v1.0.0.0
+   .\System.Collections\4.0.11\ref\netcore50\System.Collections.dll   v4.0.10.0
+   .\System.Console\4.0.0\lib\net46\System.Console.dll   v4.0.0.0
+   .\System.Linq.Expressions\4.1.0\lib\net463\System.Linq.Expressions.dll   v4.1.0.0
+   .\System.Linq\4.1.0\lib\net463\System.Linq.dll   v4.1.0.0
+   .\System.Net.Http\4.1.0\lib\net46\System.Net.Http.dll   v4.1.0.0
+   .\System.Net.Primitives\4.0.11\ref\netcore50\System.Net.Primitives.dll   v4.0.10.0
+   .\System.ObjectModel\4.0.12\lib\netstandard1.3\System.ObjectModel.dll   v4.0.12.0
+   .\System.Runtime\4.1.0\lib\net462\System.Runtime.dll   v4.1.0.0
+   .\System.Text.RegularExpressions\4.1.0\lib\net463\System.Text.RegularExpressions.dll   v4.1.0.0
+   .\System.Threading\4.0.11\lib\netcore50\System.Threading.dll   v4.0.11.0</Info>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\App.xaml.cs} (last modified 30 May 2026 22:09:26) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\MauiProgram.cs} (last modified 31 May 2026 08:54:02) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Platforms\Android\MainApplication.cs} (last modified 01 Jun 2026 14:38:47) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>Error parsing the file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Views\DiscoverPage.xaml.cs}. Exception.Type {System.ArgumentOutOfRangeException}  Exception.Message {索引超出范围。必须为非负值并小于集合大小。
+参数名: startIndex}</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Views\HomePage.xaml.cs} (last modified 31 May 2026 20:29:26) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\ViewModels\AccessibilityViewModel.cs} (last modified 30 May 2026 21:53:33) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\ViewModels\DiscoverViewModel.cs} (last modified 31 May 2026 19:53:14) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\ViewModels\HistoryViewModel.cs} (last modified 31 May 2026 19:54:59) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\ViewModels\HomeViewModel.cs} (last modified 01 Jun 2026 14:36:39) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\ViewModels\PictureViewModel.cs} (last modified 01 Jun 2026 08:56:46) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Services\MealService.cs} (last modified 01 Jun 2026 14:35:52) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Models\FoodImageResult.cs} (last modified 31 May 2026 09:14:26) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Warning>The source file {C:\Users\27336\Desktop\WhatToEat\WhatToEat\Models\MealDayGroup.cs} (last modified 31 May 2026 20:33:28) and the PDB file of the assembly {WhatToEat} (last modified 30 May 2026 21:22:42) are not in-sync.</Warning>
+  <Info>32 source files parsed ; 21 source files not found ; 12 source files not in-sync with PDB</Info>
+  <Info>0 code rule has been extracted from code.</Info>
+  <Info>No issue have been imported. No directory that contains issue files have been resolved from the project WhatToEat</Info>
+  <Info>No dependency cycle detected in assemblies reference graph.</Info>
+  <Info>Do merge code generated by compiler into application code.</Info>
+  <Info>Analysis Results Retention: No previous analysis result older than 60 days found to delete.</Info>
+  <Info>Analyze dependencies of your application.</Info>
+  <Info>No SuppressMessageAttribute found in the analyzed code base. Since NDepend v2018.2 SuppressMessageAttribute can be used to suppress NDepend issues. Don't forget to set in your projects the compilation symbol CODE_ANALYSIS to use this attribute to suppress NDepend issues.</Info>
+  <Info>Persisting code model snapshot in {C:\Users\27336\Desktop\WhatToEat\NDependOut\NDependAnalysisResult_WhatToEat_2026Jun01_16h39m29.ndar}</Info>
+  <Warning>The source directory {C:\Users\27336\Desktop\WhatToEat\WhatToEat\obj\Debug\net8.0-android\Microsoft.VisualStudio.HotReload.MobileTapInitializer\Microsoft.VisualStudio.HotReload.MobileTapInitializer.ModuleInitializerGenerator} referenced by the PDB file of the assembly {WhatToEat} can't be found.</Warning>
+  <Warning>The source directory {C:\Users\27336\Desktop\WhatToEat\WhatToEat\obj\Debug\net8.0-android\CommunityToolkit.Maui.SourceGenerators\CommunityToolkit.Maui.SourceGenerators.Generators.TextColorToGenerator} referenced by the PDB file of the assembly {WhatToEat} can't be found.</Warning>
+  <Warning>The source directory {C:\Users\27336\Desktop\WhatToEat\WhatToEat\obj\Debug\net8.0-android\Microsoft.Maui.Controls.SourceGen\Microsoft.Maui.Controls.SourceGen.CodeBehindGenerator} referenced by the PDB file of the assembly {WhatToEat} can't be found.</Warning>
+  <Info>Log trend metrics values.</Info>
+  <Warning>Execution of 13 rules was skipped on both snapshots because they require code coverage data, which has not been imported in both baseline and newer code base snapshots:
+   Assemblies and Namespaces should be tested
+   Avoid decreasing code coverage by tests of types
+   Code should be tested
+   Complex Methods should be 100% tested
+   From now, all types added should be 100% covered by tests
+   Methods refactored should be tested
+   Methods should have a low C.R.A.P score
+   Namespaces almost 100% tested should be 100% tested
+   New Types and Methods should be tested
+   Types 100% covered should be tagged with FullCoveredAttribute
+   Types almost 100% tested should be 100% tested
+   Types tagged with FullCoveredAttribute should be 100% covered
+   Types that used to be 100% covered by tests should still be 100% covered</Warning>
+  <Warning>Execution of 3 quality gates was skipped on both snapshots because they require code coverage data, which has not been imported in both baseline and newer code base snapshots:
+   Percentage Coverage
+   Percentage Coverage on New Code
+   Percentage Coverage on Refactored Code</Warning>
+  <Info>Execute queries and rules</Info>
+  <Info>Output report projects</Info>
+  <Info>Output report source files</Info>
+  <Warning>The baseline versions of source files modified are not available in the report.
+Reason: Cannot find the file {SourceFiles.zip} in the analysis result directory {C:\Users\27336\Desktop\WhatToEat\NDependOut}.
+Make sure that the NDepend Project Properties &gt; Analysis &gt; Zip Source Files setting is enabled.</Warning>
+  <Info>The report lists 20 sources files (0 new and 0 modified since the baseline) on a total of 53 source files for the application analyzed.
+See 'Project Properties &gt; Report' to adjust the set of source files listed in the report.</Info>
+  <Info>Building the report (standard, compressed).</Info>
+  <Info>NDepend analysis done. Duration: 00:27.972</Info>
+</InfoWarnings>
